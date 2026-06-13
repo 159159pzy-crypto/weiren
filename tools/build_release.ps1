@@ -8,6 +8,22 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 Set-Location $root
 
+function Invoke-GodotCheck {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments
+    )
+
+    $output = & godot @Arguments 2>&1 | Out-String
+    Write-Host $output
+    if ($LASTEXITCODE -ne 0) {
+        throw "Godot command failed with exit code ${LASTEXITCODE}: godot $($Arguments -join ' ')"
+    }
+    if ($output -match "SCRIPT ERROR|ERROR:") {
+        throw "Godot command printed errors: godot $($Arguments -join ' ')"
+    }
+}
+
 Write-Host "== Cat Eye After release check =="
 
 Write-Host "1/4 Project audit"
@@ -23,9 +39,9 @@ if (Test-Path "backend/__pycache__") {
 }
 
 Write-Host "3/4 Godot smoke"
-godot --headless --path "$root" --quit-after 1
-godot --headless --path "$root" --script "res://scripts/SmokeTest.gd"
-godot --headless --path "$root" --script "res://scripts/FullRunAudit.gd"
+Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--quit-after", "1")
+Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--script", "res://scripts/SmokeTest.gd")
+Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--script", "res://scripts/FullRunAudit.gd")
 
 if ($SkipExport) {
     Write-Host "4/4 Export skipped"

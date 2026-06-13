@@ -7,9 +7,10 @@ const EVENTS_PATH := "res://data/events.json"
 const BG_PEEPHOLE := "res://assets/generated/bg_peephole_hallway_16x9.png"
 const BG_ROOM := "res://assets/generated/bg_safe_room_clueboard_16x9.png"
 const BG_FINAL := "res://assets/generated/cg_another_rikki_hui_16x9.png"
-const CHAR_HUMAN := "res://assets/generated/char_human_visitor_hui.png"
-const CHAR_MIMIC := "res://assets/generated/char_mimic_visitor_hui.png"
-const CHAR_RIKKI := "res://assets/generated/char_another_rikki_hui.png"
+const CHAR_HUMAN := "res://assets/generated/char_human_base.png"
+const CHAR_FAKE := "res://assets/generated/char_fake_base.png"
+const CHAR_MIMIC := "res://assets/generated/char_mimic_base.png"
+const CHAR_RIKKI := "res://assets/generated/char_rikki_base.png"
 const BACKEND_DIALOGUE_URL := "http://127.0.0.1:8787/v1/dialogue"
 
 var rng := RandomNumberGenerator.new()
@@ -580,6 +581,8 @@ func _portrait_for_visitor(visitor: Dictionary) -> String:
 		return CHAR_RIKKI
 	if visitor.get("role", "") == "human":
 		return CHAR_HUMAN
+	if visitor.get("role", "") == "fake":
+		return CHAR_FAKE
 	return CHAR_MIMIC
 
 

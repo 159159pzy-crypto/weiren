@@ -3,9 +3,6 @@ extends SceneTree
 var scene: Node
 
 func _initialize() -> void:
-	scene = load("res://scenes/Main.tscn").instantiate()
-	root.add_child(scene)
-	await process_frame
 	var results := []
 	results.append(await _run_strategy("audit-true", "truth"))
 	results.append(await _run_strategy("audit-refuse", "refuse"))
@@ -15,12 +12,19 @@ func _initialize() -> void:
 
 
 func _run_strategy(seed_text: String, strategy: String) -> Dictionary:
+	if scene != null:
+		scene.queue_free()
+		scene = null
+		await process_frame
+	scene = load("res://scenes/Main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
 	scene._show_title()
 	scene.seed_input.text = seed_text
 	scene._start_new_game()
 	await process_frame
 	var guard := 0
-	while scene.current_phase != "ending" and guard < 400:
+	while scene.current_phase != "ending" and guard < 1000:
 		guard += 1
 		match scene.current_phase:
 			"prep":
@@ -40,7 +44,10 @@ func _run_strategy(seed_text: String, strategy: String) -> Dictionary:
 			_:
 				break
 		await process_frame
-	assert(scene.current_phase == "ending")
+	if scene.current_phase != "ending":
+		push_error("Full run audit did not reach ending for " + strategy + ": phase=" + str(scene.current_phase) + " day=" + str(scene.state.get("day", "?")))
+		quit(1)
+		return {}
 	return {
 		"strategy": strategy,
 		"seed": seed_text,

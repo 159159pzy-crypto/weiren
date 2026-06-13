@@ -1,0 +1,105 @@
+{
+  "brief": {
+    "role": "character",
+    "subject": "original anxious teenage girl visitor standing alone outside an apartment door at midnight, natural dark brown eyes, wet hair tips, worried human expression, hands visible, small supply bag, solo, no figures behind her, no glowing eyes",
+    "usage": "Godot prompt-only human visitor portrait for 猫眼之后",
+    "mood": "nervous, human, pleading, exhausted but trustworthy under hallway pressure",
+    "project_name": "猫眼之后",
+    "style": [
+      "polished anime visual novel character portrait, psychological horror lighting, centered door-view composition, clean linework, original character design, believable human visitor"
+    ],
+    "palette": [
+      "cold cyan hallway highlights, deep charcoal shadows, muted navy school uniform, natural skin tones"
+    ],
+    "output": "D:\\game\\assets\\generated\\char_human_base.png"
+  },
+  "api": "http://127.0.0.1:8188",
+  "model": {
+    "id": "wai-illustrious-sdxl-v170",
+    "enabled": true,
+    "checkpoint": "人物\\waiIllustriousSDXL_v170.safetensors",
+    "base": "sdxl",
+    "priority": 80,
+    "best_for": [
+      "illustration",
+      "character",
+      "anime",
+      "game-art",
+      "thumbnail",
+      "portrait",
+      "bang-dream",
+      "illustrious"
+    ],
+    "avoid_for": [
+      "realistic-product-photo",
+      "photography",
+      "texture",
+      "flat-icon"
+    ],
+    "default_size": [
+      1024,
+      1024
+    ],
+    "default_steps": 30,
+    "default_cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "quality_prompt": "masterpiece, best quality, newest, highres, polished anime illustration, clean linework",
+    "default_negative": "low quality, worst quality, normal quality, blurry, jpeg artifacts, watermark, signature, unwanted text, logo, bad anatomy, extra fingers, malformed hands"
+  },
+  "loras": [],
+  "workflow": {
+    "id": "webui-like-sdxl-txt2img",
+    "file": "assets/workflows/webui-like-sdxl-txt2img.json",
+    "base": "sdxl",
+    "priority": 25,
+    "best_for": [
+      "webui",
+      "txt2img",
+      "hires",
+      "high-resolution",
+      "hero",
+      "character",
+      "illustration",
+      "background",
+      "thumbnail"
+    ],
+    "supports_lora": true,
+    "supports_hires_fix": true,
+    "supports_final_resize": true,
+    "notes": "Native-node WebUI-like chain: txt2img, LoRA insertion, latent Hires.fix, second denoise pass, VAE decode, final pixel resize, save."
+  },
+  "positive_prompt": "original anxious teenage girl visitor standing alone outside an apartment door at midnight, natural dark brown eyes, wet hair tips, worried human expression, hands visible, small supply bag, solo, no figures behind her, no glowing eyes, polished anime visual novel character portrait, psychological horror lighting, centered door-view composition, clean linework, original character design, believable human visitor, palette of cold cyan hallway highlights, deep charcoal shadows, muted navy school uniform, natural skin tones, nervous, human, pleading, exhausted but trustworthy under hallway pressure, character design sheet quality, readable silhouette, expressive pose, polished details, masterpiece, best quality, newest, highres, polished anime illustration",
+  "negative_prompt": "low quality, blurry, watermark, signature, unwanted text, bad anatomy, extra limbs, malformed hands, cropped face, worst quality, normal quality, jpeg artifacts, logo, extra fingers, red eyes, glowing eyes, demon eyes, black sclera, shadow figures, person behind, silhouette behind, monster, creature, character lora, named character, readable text, sign text, extra arms, extra legs, duplicate character, multiple people, blood, black tears",
+  "width": 832,
+  "height": 1216,
+  "steps": 30,
+  "cfg": 6.5,
+  "sampler": "dpmpp_2m",
+  "scheduler": "karras",
+  "denoise": 1.0,
+  "hires_scale": 1.5,
+  "hires_steps": 12,
+  "hires_denoise": 0.35,
+  "hires_upscale_method": "nearest-exact",
+  "final_scale": 1.0,
+  "final_upscale_method": "lanczos",
+  "input_image": null,
+  "mask_image": null,
+  "comfyui_input_image": null,
+  "comfyui_mask_image": null,
+  "mask_grow": 6,
+  "mask_channel": "red",
+  "seed": 613202601,
+  "batch_size": 1,
+  "filename_prefix": "codex_char_human_base_clean",
+  "output": "D:\\game\\assets\\generated\\char_human_base.png",
+  "workflow_file": "C:\\Users\\pzy\\.codex\\skills\\stable-diffusion-assets\\assets\\workflows\\webui-like-sdxl-txt2img.json",
+  "workflow_node_count": 10,
+  "prompt_id": "ea2442d4-34e7-4a1d-a809-ae78ed9e7023",
+  "comfyui_image": {
+    "filename": "codex_char_human_base_clean_00001_.png",
+    "subfolder": "",
+    "type": "output"
+  }
+}

@@ -42,6 +42,36 @@ def assert_sidecar_contains(path: str, expected: str) -> None:
     require(expected in text, f"{path} does not mention {expected!r}")
 
 
+def sidecar_json_for_asset(path: str) -> dict:
+    sidecar = ROOT / path.replace(".png", ".asset-plan.json")
+    require(sidecar.exists(), f"Missing sidecar {sidecar.relative_to(ROOT)}")
+    return json.loads(sidecar.read_text(encoding="utf-8"))
+
+
+def assert_no_loras(path: str) -> None:
+    sidecar = sidecar_json_for_asset(path)
+    loras = sidecar.get("loras", [])
+    require(isinstance(loras, list), f"{path} sidecar loras must be a list")
+    require(not loras, f"{path} must not use LoRA after character-LoRA rollback")
+
+
+def assert_hires_sane(path: str) -> None:
+    sidecar = sidecar_json_for_asset(path)
+    scale = float(sidecar.get("hires_scale", 1.0))
+    hires_denoise = float(sidecar.get("hires_denoise", 0.0))
+    steps = int(sidecar.get("hires_steps", 0))
+    require(1.0 <= scale <= 1.75, f"{path} hires_scale is unsafe: {scale}")
+    require(0.15 <= hires_denoise <= 0.45, f"{path} hires_denoise is unsafe: {hires_denoise}")
+    require(1 <= steps <= 24, f"{path} hires_steps is unsafe: {steps}")
+
+
+def assert_no_preprocessor_leaks() -> None:
+    banned = ["controlnet", "preprocess", "preprocessor", "canny", "depth", "openpose", "lineart", "scribble", "softedge"]
+    for path in (ROOT / "assets/generated").iterdir():
+        lower_name = path.name.lower()
+        require(not any(token in lower_name for token in banned), f"Preprocessor-looking generated file leaked: {path.name}")
+
+
 def audit_data() -> list[str]:
     characters = read_json("data/characters.json")
     day_rules = read_json("data/day_rules.json")
@@ -68,10 +98,12 @@ def audit_assets() -> list[str]:
     ]
     cgs = ["assets/generated/cg_another_rikki_hui_16x9.png"]
     characters = [
-        "assets/generated/char_human_visitor_hui.png",
-        "assets/generated/char_mimic_visitor_hui.png",
-        "assets/generated/char_another_rikki_hui.png",
+        "assets/generated/char_human_base.png",
+        "assets/generated/char_fake_base.png",
+        "assets/generated/char_mimic_base.png",
+        "assets/generated/char_rikki_base.png",
     ]
+    assert_no_preprocessor_leaks()
     for path in backgrounds + cgs + characters:
         require((ROOT / path).exists(), f"Missing asset {path}")
     for path in backgrounds + cgs:
@@ -79,9 +111,10 @@ def audit_assets() -> list[str]:
     for path in backgrounds:
         assert_sidecar_contains(path.replace(".png", ".asset-plan.json"), "txt2img")
     for path in characters:
-        assert_sidecar_contains(path.replace(".png", ".asset-plan.json"), "hui-prompt-only-locked")
+        assert_no_loras(path)
+        assert_hires_sane(path)
     assert_sidecar_contains("assets/generated/cg_another_rikki_hui_16x9.asset-plan.json", "hui-derived-16x9-adapter")
-    return ["backgrounds=2@16:9", "characters=3@hui", "cg=1@hui-derived-16:9"]
+    return ["backgrounds=2@16:9", "characters=4@no-lora", "cg=1@hui-derived-16:9", "preprocessor_leaks=none"]
 
 
 def audit_godot() -> list[str]:
@@ -94,6 +127,7 @@ def audit_godot() -> list[str]:
         "BG_ROOM",
         "BG_FINAL",
         "CHAR_HUMAN",
+        "CHAR_FAKE",
         "CHAR_MIMIC",
         "CHAR_RIKKI",
         "BACKEND_DIALOGUE_URL",
@@ -102,6 +136,8 @@ def audit_godot() -> list[str]:
         "_request_backend_dialogue",
     ]:
         require(token in main, f"Main.gd missing {token}")
+    for stale in ["char_human_visitor_hui.png", "char_mimic_visitor_hui.png", "char_another_rikki_hui.png"]:
+        require(stale not in main, f"Main.gd still references old character asset {stale}")
     require('script = ExtResource("1_main")' in scene, "Main scene does not attach Main.gd")
     endings = re.findall(r'title = "([^"]*End[^"]*)"', main)
     require(len(endings) >= 7, "Expected multiple ending branches in Main.gd")

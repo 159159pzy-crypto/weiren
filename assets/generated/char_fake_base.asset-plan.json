@@ -1,0 +1,105 @@
+{
+  "brief": {
+    "role": "character",
+    "subject": "original teenage girl impostor standing outside an apartment door at midnight, too calm smile, slightly red tinted eyes, fingertips stained with black mud, hands visible, visual novel portrait",
+    "usage": "Godot prompt-only fake visitor portrait for 猫眼之后",
+    "mood": "uncanny, polite, dangerous, fake human",
+    "project_name": "猫眼之后",
+    "style": [
+      "polished anime visual novel character portrait, psychological horror lighting, centered door-view composition, clean linework, original character design"
+    ],
+    "palette": [
+      "cold cyan rim light, emergency red eyes, deep charcoal shadows, black mud details"
+    ],
+    "output": "D:\\game\\assets\\generated\\char_fake_base.png"
+  },
+  "api": "http://127.0.0.1:8188",
+  "model": {
+    "id": "wai-illustrious-sdxl-v170",
+    "enabled": true,
+    "checkpoint": "人物\\waiIllustriousSDXL_v170.safetensors",
+    "base": "sdxl",
+    "priority": 80,
+    "best_for": [
+      "illustration",
+      "character",
+      "anime",
+      "game-art",
+      "thumbnail",
+      "portrait",
+      "bang-dream",
+      "illustrious"
+    ],
+    "avoid_for": [
+      "realistic-product-photo",
+      "photography",
+      "texture",
+      "flat-icon"
+    ],
+    "default_size": [
+      1024,
+      1024
+    ],
+    "default_steps": 30,
+    "default_cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "quality_prompt": "masterpiece, best quality, newest, highres, polished anime illustration, clean linework",
+    "default_negative": "low quality, worst quality, normal quality, blurry, jpeg artifacts, watermark, signature, unwanted text, logo, bad anatomy, extra fingers, malformed hands"
+  },
+  "loras": [],
+  "workflow": {
+    "id": "webui-like-sdxl-txt2img",
+    "file": "assets/workflows/webui-like-sdxl-txt2img.json",
+    "base": "sdxl",
+    "priority": 25,
+    "best_for": [
+      "webui",
+      "txt2img",
+      "hires",
+      "high-resolution",
+      "hero",
+      "character",
+      "illustration",
+      "background",
+      "thumbnail"
+    ],
+    "supports_lora": true,
+    "supports_hires_fix": true,
+    "supports_final_resize": true,
+    "notes": "Native-node WebUI-like chain: txt2img, LoRA insertion, latent Hires.fix, second denoise pass, VAE decode, final pixel resize, save."
+  },
+  "positive_prompt": "original teenage girl impostor standing outside an apartment door at midnight, too calm smile, slightly red tinted eyes, fingertips stained with black mud, hands visible, visual novel portrait, polished anime visual novel character portrait, psychological horror lighting, centered door-view composition, clean linework, original character design, palette of cold cyan rim light, emergency red eyes, deep charcoal shadows, black mud details, uncanny, polite, dangerous, fake human, character design sheet quality, readable silhouette, expressive pose, polished details, masterpiece, best quality, newest, highres, polished anime illustration",
+  "negative_prompt": "low quality, blurry, watermark, signature, unwanted text, bad anatomy, extra limbs, malformed hands, cropped face, worst quality, normal quality, jpeg artifacts, logo, extra fingers, character lora, named character, readable text, sign text, extra arms, extra legs, duplicate character",
+  "width": 832,
+  "height": 1216,
+  "steps": 30,
+  "cfg": 6.5,
+  "sampler": "dpmpp_2m",
+  "scheduler": "karras",
+  "denoise": 1.0,
+  "hires_scale": 1.5,
+  "hires_steps": 12,
+  "hires_denoise": 0.35,
+  "hires_upscale_method": "nearest-exact",
+  "final_scale": 1.0,
+  "final_upscale_method": "lanczos",
+  "input_image": null,
+  "mask_image": null,
+  "comfyui_input_image": null,
+  "comfyui_mask_image": null,
+  "mask_grow": 6,
+  "mask_channel": "red",
+  "seed": 420102,
+  "batch_size": 1,
+  "filename_prefix": "codex_char_fake_base",
+  "output": "D:\\game\\assets\\generated\\char_fake_base.png",
+  "workflow_file": "C:\\Users\\pzy\\.codex\\skills\\stable-diffusion-assets\\assets\\workflows\\webui-like-sdxl-txt2img.json",
+  "workflow_node_count": 10,
+  "prompt_id": "cb2e3245-e3e6-4a43-9ac5-9daf8dc5f521",
+  "comfyui_image": {
+    "filename": "codex_char_fake_base_00001_.png",
+    "subfolder": "",
+    "type": "output"
+  }
+}
