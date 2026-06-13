@@ -555,6 +555,8 @@ func _start_new_game() -> void:
 		"refusal_streak": 0,
 		"refused_humans_streak": 0,
 		"guarded": false,
+		"stayed_awake": false,
+		"care_recovery_bonus": 0,
 		"guarded_id": "",
 		"code_phrase": "",
 		"detector_focus": "none",
@@ -582,6 +584,8 @@ func _begin_day() -> void:
 	if entering_new_day:
 		state["quarantine_used"] = 0
 		state["guarded"] = false
+		state["stayed_awake"] = false
+		state["care_recovery_bonus"] = 0
 		state["guarded_id"] = ""
 		state["detector_focus"] = "none"
 		state["rooms_assigned"] = false
@@ -1872,6 +1876,7 @@ func _soyo_care() -> void:
 	state["supplies"] -= 6
 	state["trust"] = mini(100, state["trust"] + 6)
 	state["stamina"] = mini(state["stamina_max"], state["stamina"] + 8)
+	state["care_recovery_bonus"] = maxi(int(state.get("care_recovery_bonus", 0)), 10)
 	var cared_id := _most_stressed_inside_id()
 	if cared_id.is_empty():
 		_log("爽世把水和药分好。温柔本身也可能是一种秩序。")
@@ -1886,6 +1891,7 @@ func _guard_until_dawn() -> void:
 	if !_spend_stamina(35):
 		return
 	state["guarded"] = true
+	state["stayed_awake"] = true
 	state["contamination"] = mini(100, state["contamination"] + 3)
 	_log("你熬夜守到天亮。猫眼里的黑点像眼睛一样睁着。")
 	_dawn_settlement([])
@@ -2058,15 +2064,27 @@ func _dawn_settlement(_events: Array) -> void:
 	var food_cost := 8 + int(state["humans_inside"]) * 2
 	state["supplies"] = maxi(0, state["supplies"] - food_cost)
 	var supply_penalty := maxi(0, 25 - int(state["supplies"]))
-	var cap_penalty := int(state.get("stamina_cap_penalty", 0)) + supply_penalty
+	var contamination_cap_penalty := _contamination_stamina_cap_penalty()
+	var sleepless_penalty := 10 if bool(state.get("stayed_awake", false)) else 0
+	var cap_penalty := int(state.get("stamina_cap_penalty", 0)) + supply_penalty + contamination_cap_penalty + sleepless_penalty
 	state["stamina_max"] = maxi(70, 100 - cap_penalty)
 	var recovery := 45
-	if state["guarded"]:
+	if state["guarded"] and !bool(state.get("stayed_awake", false)):
 		recovery += 15
+	recovery += int(state.get("care_recovery_bonus", 0))
 	if state["contamination"] > 60:
 		recovery -= 10
+	if bool(state.get("stayed_awake", false)):
+		recovery -= 10
+	recovery = maxi(10, recovery)
 	state["stamina"] = mini(state["stamina_max"], maxi(0, state["stamina"]) + recovery)
 	state["outside_danger"] = mini(100, state["outside_danger"] + int(state["abandonment"]) * 2 + int(state["stolen"]) * 2)
+	if contamination_cap_penalty > 0:
+		_log("高污染压低体力上限：污染惩罚 -" + str(contamination_cap_penalty) + "。")
+	if bool(state.get("stayed_awake", false)):
+		_log("连续熬夜让身体发冷：次日体力上限 -10，恢复减少。")
+	if int(state.get("care_recovery_bonus", 0)) > 0:
+		_log("爽世照顾让黎明恢复 +" + str(state.get("care_recovery_bonus", 0)) + "。")
 	_log("黎明结算：消耗物资 " + str(food_cost) + "，恢复体力 " + str(recovery) + "。")
 	_record_day_summary(food_cost, recovery)
 	title_label.text = "第 " + str(state["day"]) + " 夜 / 黎明"
@@ -2087,6 +2105,17 @@ func _dawn_settlement(_events: Array) -> void:
 		)
 
 
+func _contamination_stamina_cap_penalty() -> int:
+	var contamination := int(state.get("contamination", 0))
+	if contamination >= 85:
+		return 15
+	if contamination >= 70:
+		return 10
+	if contamination >= 55:
+		return 5
+	return 0
+
+
 func _record_day_summary(food_cost: int, recovery: int) -> void:
 	var summary := "D" + str(state.get("day", "?")) + " 黎明结算："
 	summary += "\n- 屋内真人 " + str(state.get("humans_inside", 0)) + "，入侵者 " + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0)))
@@ -2094,6 +2123,7 @@ func _record_day_summary(food_cost: int, recovery: int) -> void:
 	summary += "\n- 物资消耗 " + str(food_cost) + "，体力恢复 " + str(recovery) + "，下一夜外部危险 " + str(state.get("outside_danger", 0))
 	summary += "\n- 污染 " + str(state.get("contamination", 0)) + "，信任 " + str(state.get("trust", 0)) + "，线索可信 " + str(state.get("evidence_integrity", 0))
 	summary += "\n- 总拒绝 " + str(state.get("refusal_count", 0)) + "，连续拒绝真人 " + str(state.get("refused_humans_streak", 0)) + "，体力上限惩罚 " + str(state.get("stamina_cap_penalty", 0))
+	summary += "\n- 污染上限惩罚 " + str(_contamination_stamina_cap_penalty()) + "，彻夜未眠 " + ("是" if bool(state.get("stayed_awake", false)) else "否") + "，照顾恢复 +" + str(state.get("care_recovery_bonus", 0))
 	var summaries: Array = state.get("day_summaries", [])
 	summaries.append(summary)
 	if summaries.size() > 9:
@@ -2199,7 +2229,7 @@ func _show_ending(kind: String) -> void:
 
 
 func _final_stats() -> String:
-	return "Session：" + session_id + "\n可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0))
+	return "Session：" + session_id + "\n可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + "\n污染上限惩罚：" + str(_contamination_stamina_cap_penalty())
 
 
 func _update_panels() -> void:
@@ -2214,7 +2244,7 @@ func _update_panels() -> void:
 	status += _bar("门锁", state["door"], 100, "#ffc878")
 	status += _bar("隔离", state["quarantine"], 100, "#8ab4ff")
 	status += _bar("物资", state["supplies"], 100, "#d5e878")
-	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + " / 连拒真人：" + str(state.get("refused_humans_streak", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + "\n"
+	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + " / 连拒真人：" + str(state.get("refused_humans_streak", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + " / 污染惩罚：" + str(_contamination_stamina_cap_penalty()) + "\n彻夜未眠：" + ("是" if bool(state.get("stayed_awake", false)) else "否") + " / 照顾恢复：+" + str(state.get("care_recovery_bonus", 0)) + "\n"
 	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
 	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"

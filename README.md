@@ -58,6 +58,7 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 - Dusk prep now includes yesterday-record review and quarantine inspection, so the player can connect dawn settlement outcomes back into the next night's decisions.
 - Refusal penalties now track total refusals, consecutive rejected humans, persistent stamina-cap loss from missed supplies, and outside-danger-driven chase pressure.
 - Optional LLM/free-dialogue responses now surface emotion, expression, suggested options, clue-trigger flags, and bounded trust/stress/stamina effects inside Godot while the game still owns truth and outcomes.
+- Stamina caps now account for supply shortage, missed supplies, high contamination, all-night guarding, and Soyo care recovery bonuses during dawn settlement.
 
 ## 验证
 
