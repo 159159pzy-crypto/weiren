@@ -355,7 +355,7 @@ def audit_godot() -> list[str]:
 
 def audit_backend() -> list[str]:
     backend = (ROOT / "backend/main.py").read_text(encoding="utf-8")
-    for token in ["FastAPI", "sqlite3", "DialogueRequest", "DialogueResponse", "/v1/dialogue", "LLM_API_KEY"]:
+    for token in ["FastAPI", "sqlite3", "DialogueRequest", "DialogueResponse", "/v1/dialogue", "/v1/session/{session_id}/summary", "source_counts", "clue_hits", "LLM_API_KEY"]:
         require(token in backend, f"backend/main.py missing {token}")
     smoke = ROOT / "backend/smoke_test.py"
     require(smoke.exists(), "Missing backend smoke test")

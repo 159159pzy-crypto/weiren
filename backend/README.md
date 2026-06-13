@@ -37,3 +37,4 @@ The Godot title screen also exposes the release note/disclaimer text from `data/
 - `GET /health`
 - `POST /v1/dialogue`
 - `GET /v1/logs/{session_id}`
+- `GET /v1/session/{session_id}/summary`

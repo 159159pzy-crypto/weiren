@@ -2078,7 +2078,7 @@ func _show_ending(kind: String) -> void:
 
 
 func _final_stats() -> String:
-	return "可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0))
+	return "Session：" + session_id + "\n可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0))
 
 
 func _update_panels() -> void:

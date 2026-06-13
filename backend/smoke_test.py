@@ -36,6 +36,12 @@ def main() -> None:
     logs = client.get("/v1/logs/backend-smoke")
     assert logs.status_code == 200, logs.text
     assert len(logs.json()) >= 1
+    summary = client.get("/v1/session/backend-smoke/summary")
+    assert summary.status_code == 200, summary.text
+    summary_data = summary.json()
+    assert summary_data["dialogue_count"] >= 1
+    assert summary_data["clue_hits"] >= 1
+    assert summary_data["source_counts"].get("fallback", 0) >= 1
     print("BACKEND_SMOKE_OK", health.json()["characters"], DB_PATH.exists(), data["source"])
 
 

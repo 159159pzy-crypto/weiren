@@ -265,3 +265,29 @@ def logs(session_id: str) -> list[dict[str, Any]]:
         result.append(item)
     return result
 
+
+@app.get("/v1/session/{session_id}/summary")
+def session_summary(session_id: str) -> dict[str, Any]:
+    rows = logs(session_id)
+    source_counts: dict[str, int] = {}
+    character_ids: set[str] = set()
+    days: list[int] = []
+    clue_hits = 0
+    for row in rows:
+        character_ids.add(str(row.get("character_id", "")))
+        days.append(int(row.get("day", 0)))
+        response = row.get("response", {})
+        source = str(response.get("source", "unknown"))
+        source_counts[source] = source_counts.get(source, 0) + 1
+        if bool(response.get("clue_triggered", False)):
+            clue_hits += 1
+    return {
+        "session_id": session_id,
+        "dialogue_count": len(rows),
+        "day_min": min(days) if days else None,
+        "day_max": max(days) if days else None,
+        "character_count": len(character_ids),
+        "source_counts": source_counts,
+        "clue_hits": clue_hits,
+        "recent": rows[:5],
+    }
