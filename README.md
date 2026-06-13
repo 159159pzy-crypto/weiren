@@ -44,8 +44,10 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 ## 验证
 
 ```powershell
+python tools/audit_project.py
 godot --headless --path D:\game --quit-after 1
 godot --headless --path D:\game --script res://scripts/SmokeTest.gd
+godot --headless --path D:\game --script res://scripts/FullRunAudit.gd
 python -m backend.smoke_test
 ```
 
@@ -56,3 +58,17 @@ $p = Start-Process -FilePath "python" -ArgumentList @("-m","uvicorn","backend.ma
 godot --headless --path D:\game --script res://scripts/SmokeTest.gd
 Stop-Process -Id $p.Id
 ```
+
+发布前总检查：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\build_release.ps1 -SkipExport
+```
+
+导出 Windows 版：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\build_release.ps1
+```
+
+如果导出失败但检查通过，通常是当前机器没有安装 Godot 4.6.3 export templates。打开 Godot Editor -> Editor -> Manage Export Templates 安装后重跑。

@@ -918,7 +918,7 @@ func _apply_quarantine(visitor: Dictionary, clue_score: int) -> void:
 			_log("伪人被关进隔离区，冲击后暴露形态。")
 		else:
 			state["fakes_inside"] += 1
-			state["contamination"] += 6
+			state["contamination"] = mini(100, int(state["contamination"]) + 6)
 			_log("隔离区收容了可疑目标，但证据不足，它留下了污染。")
 	else:
 		state["quarantine"] = maxi(0, state["quarantine"] - rng.randi_range(32, 58))
