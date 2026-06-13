@@ -543,6 +543,7 @@ func _start_new_game() -> void:
 		"low_trust_incidents": 0,
 		"outside_danger": 16,
 		"evidence_integrity": 100,
+		"detector_failures": 0,
 		"mimic_learning": 0,
 		"humans_inside": 0,
 		"inside_human_ids": [],
@@ -1466,6 +1467,20 @@ func _inspection_chance(category: String, base_chance: int) -> int:
 	return clampi(chance, 35, 98)
 
 
+func _detector_malfunction(category: String, label: String) -> bool:
+	var shortage := maxi(0, 20 - int(state.get("supplies", 0)))
+	var evidence_noise := maxi(0, 45 - int(state.get("evidence_integrity", 100)))
+	if shortage <= 0 and evidence_noise <= 0:
+		return false
+	var chance := clampi(shortage * 2 + evidence_noise / 3 + (8 if _detector_matches(category) else 0), 0, 45)
+	if rng.randi_range(1, 100) > chance:
+		return false
+	state["detector_failures"] = int(state.get("detector_failures", 0)) + 1
+	state["evidence_integrity"] = maxi(0, int(state.get("evidence_integrity", 0)) - 4)
+	_log("检测设备故障：" + label + "读数跳变，线索可信下降。")
+	return true
+
+
 func _inspect_action_label(label: String, category: String, base_cost: int) -> String:
 	var cost := _inspection_cost(category, base_cost)
 	var suffix := " / 重点" if _detector_matches(category) else ""
@@ -1480,6 +1495,9 @@ func _inspect_breath_shadow() -> void:
 	if _low_trust_inspection_resistance(visitor, "呼吸/影子检测"):
 		return
 	if _advance_chase(visitor, 1, "呼吸/影子检测"):
+		return
+	if _detector_malfunction("breath_shadow", "呼吸/影子检测"):
+		_show_inspection_result("breath_shadow", "呼吸/影子检测", {})
 		return
 	var clue := _reveal_next_clue(visitor, ["breath", "shadow"], _inspection_chance("breath_shadow", 90))
 	if clue.is_empty():
@@ -1497,6 +1515,9 @@ func _inspect_category(category: String, cost: int, label: String) -> void:
 	if _low_trust_inspection_resistance(visitor, label):
 		return
 	if _advance_chase(visitor, 1, label):
+		return
+	if _detector_malfunction(category, label):
+		_show_inspection_result(category, label, {})
 		return
 	var clue := _reveal_next_clue(visitor, [category], _inspection_chance(category, 92))
 	if clue.is_empty():
@@ -1735,6 +1756,10 @@ func _quarantine_basic_test(visitor: Dictionary) -> void:
 	state["quarantine_basic_tests"] = int(state.get("quarantine_basic_tests", 0)) + 1
 	var wear := 5 if visitor.get("role", "") == "human" else (12 if visitor.get("role", "") == "fake" else 18)
 	state["quarantine"] = maxi(0, int(state.get("quarantine", 0)) - wear)
+	if _detector_malfunction("environment", "隔离区基础检测"):
+		_show_quarantine_followup(visitor)
+		narrative.text += "\n\n[color=#8de8d0]隔离区检测特写[/color]\n临时虹膜灯闪烁后熄灭，只留下无法定性的噪点。"
+		return
 	var categories := ["teeth", "iris", "finger", "footprint", "breath", "shadow", "behavior"]
 	var clue := _reveal_next_clue(visitor, categories, _inspection_chance("breath_shadow", 88))
 	if clue.is_empty():
@@ -2314,6 +2339,7 @@ func _record_day_summary(food_cost: int, recovery: int) -> void:
 	summary += "\n- 失踪 " + str(state.get("missing", 0)) + "，身份被盗 " + str(state.get("stolen", 0)) + "，可盗用外形 " + str(state.get("stolen_ids", []).size())
 	summary += "\n- 物资消耗 " + str(food_cost) + "，体力恢复 " + str(recovery) + "，下一夜外部危险 " + str(state.get("outside_danger", 0)) + "，隔离容量 " + str(state.get("quarantine_capacity", 1))
 	summary += "\n- 污染 " + str(state.get("contamination", 0)) + "，信任 " + str(state.get("trust", 0)) + "，线索可信 " + str(state.get("evidence_integrity", 0))
+	summary += "\n- 检测设备故障 " + str(state.get("detector_failures", 0)) + " 次，物资长期不足会让读数更不可靠"
 	summary += "\n- 总拒绝 " + str(state.get("refusal_count", 0)) + "，连续拒绝真人 " + str(state.get("refused_humans_streak", 0)) + "，体力上限惩罚 " + str(state.get("stamina_cap_penalty", 0))
 	summary += "\n- 低信任事件 " + str(state.get("low_trust_incidents", 0)) + "，屋内是否仍愿意配合检查：" + ("低" if int(state.get("trust", 100)) < 25 else "可控")
 	summary += "\n- 污染上限惩罚 " + str(_contamination_stamina_cap_penalty()) + "，彻夜未眠 " + ("是" if bool(state.get("stayed_awake", false)) else "否") + "，照顾恢复 +" + str(state.get("care_recovery_bonus", 0))
@@ -2422,7 +2448,7 @@ func _show_ending(kind: String) -> void:
 
 
 func _final_stats() -> String:
-	return "Session：" + session_id + "\n可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + "\n低信任事件：" + str(state.get("low_trust_incidents", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + "\n污染上限惩罚：" + str(_contamination_stamina_cap_penalty())
+	return "Session：" + session_id + "\n可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + "\n低信任事件：" + str(state.get("low_trust_incidents", 0)) + "\n检测设备故障：" + str(state.get("detector_failures", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + "\n污染上限惩罚：" + str(_contamination_stamina_cap_penalty())
 
 
 func _update_panels() -> void:
@@ -2437,7 +2463,7 @@ func _update_panels() -> void:
 	status += _bar("门锁", state["door"], 100, "#ffc878")
 	status += _bar("隔离", state["quarantine"], 100, "#8ab4ff")
 	status += _bar("物资", state["supplies"], 100, "#d5e878")
-	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + " / 连拒真人：" + str(state.get("refused_humans_streak", 0)) + "\n低信任事件：" + str(state.get("low_trust_incidents", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + " / 污染惩罚：" + str(_contamination_stamina_cap_penalty()) + "\n彻夜未眠：" + ("是" if bool(state.get("stayed_awake", false)) else "否") + " / 照顾恢复：+" + str(state.get("care_recovery_bonus", 0)) + "\n"
+	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + " / 连拒真人：" + str(state.get("refused_humans_streak", 0)) + "\n低信任事件：" + str(state.get("low_trust_incidents", 0)) + "\n检测故障：" + str(state.get("detector_failures", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + " / 污染惩罚：" + str(_contamination_stamina_cap_penalty()) + "\n彻夜未眠：" + ("是" if bool(state.get("stayed_awake", false)) else "否") + " / 照顾恢复：+" + str(state.get("care_recovery_bonus", 0)) + "\n"
 	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
 	status += "隔离容量：" + str(state.get("quarantine_used", 0)) + "/" + str(state.get("quarantine_capacity", 1)) + "\n"

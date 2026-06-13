@@ -331,6 +331,7 @@ def audit_godot() -> list[str]:
         "_prep_set_code",
         "_prep_select_detector",
         "_prep_distribute_supplies",
+        "_detector_malfunction",
         "entering_new_day",
         "_prep_accept_self_check",
         "_prep_refuse_self_check",
@@ -411,6 +412,8 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing fake type evidence token {token}")
     for token in ["refusal_count", "refused_humans_streak", "stamina_cap_penalty", "连续拒绝真人", "补给缺口压低了体力上限"]:
         require(token in main, f"Main.gd missing refusal penalty token {token}")
+    for token in ["detector_failures", "检测设备故障", "物资长期不足", "读数跳变"]:
+        require(token in main, f"Main.gd missing detector malfunction token {token}")
     for token in ["stayed_awake", "care_recovery_bonus", "高污染压低体力上限", "连续熬夜让身体发冷", "爽世照顾让黎明恢复"]:
         require(token in main, f"Main.gd missing stamina cap token {token}")
     for token in ["今晚隔离区容量已满", "黄昏加固后当夜容量可到 2", "隔离容量"]:
@@ -419,7 +422,7 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing quarantine follow-up token {token}")
     for token in ["low_trust_incidents", "真人拒绝检查", "擅自开门救人"]:
         require(token in main, f"Main.gd missing low trust consequence token {token}")
-    for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed", "self_suspicion", "day_summaries", "refusal_count", "refused_humans_streak", "stamina_cap_penalty", "stayed_awake", "care_recovery_bonus", "quarantine_capacity", "quarantine_followups", "quarantine_basic_tests", "low_trust_incidents"]:
+    for state_key in ["code_phrase", "detector_focus", "detector_failures", "rooms_assigned", "supplies_distributed", "self_suspicion", "day_summaries", "refusal_count", "refused_humans_streak", "stamina_cap_penalty", "stayed_awake", "care_recovery_bonus", "quarantine_capacity", "quarantine_followups", "quarantine_basic_tests", "low_trust_incidents"]:
         require(state_key in main, f"Main.gd missing prep state {state_key}")
     require('script = ExtResource("1_main")' in scene, "Main scene does not attach Main.gd")
     endings = re.findall(r'title = "([^"]*End[^"]*)"', main)
