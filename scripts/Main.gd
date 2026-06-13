@@ -526,6 +526,7 @@ func _start_new_game() -> void:
 		"day": 1,
 		"stamina": 100,
 		"stamina_max": 100,
+		"stamina_cap_penalty": 0,
 		"contamination": 0,
 		"self_suspicion": 0,
 		"rule_distortion": 0,
@@ -550,7 +551,9 @@ func _start_new_game() -> void:
 		"character_trust": {},
 		"character_stress": {},
 		"gun_charges": 0,
+		"refusal_count": 0,
 		"refusal_streak": 0,
+		"refused_humans_streak": 0,
 		"guarded": false,
 		"guarded_id": "",
 		"code_phrase": "",
@@ -866,9 +869,10 @@ func _generate_visitors() -> void:
 				character = stolen_character
 				event = _door_event_by_id("visitor_duplicate")
 				_log("身份被盗回归预警：" + character.get("short", "") + "的外形再次出现在门外。")
-		if day >= 4 and roles[i] == "human" and rng.randf() < 0.30:
+		var danger_chase_bonus := clampf(float(state.get("outside_danger", 0)) / 220.0, 0.0, 0.32)
+		if day >= 4 and roles[i] == "human" and rng.randf() < 0.30 + danger_chase_bonus:
 			event = _door_event_by_id("visitor_chased")
-		if day >= 4 and roles[i] == "human" and rng.randf() < 0.18:
+		if day >= 4 and roles[i] == "human" and rng.randf() < 0.18 + danger_chase_bonus / 2.0:
 			event = _door_event_by_id("mistaken_chased")
 		if day >= 5 and roles[i] != "human" and rng.randf() < 0.24:
 			event = _door_event_by_id("visitor_duplicate")
@@ -1457,6 +1461,7 @@ func _apply_admit(visitor: Dictionary, clue_score: int) -> void:
 	var character: Dictionary = visitor["character"]
 	var role: String = visitor["role"]
 	state["refusal_streak"] = 0
+	state["refused_humans_streak"] = 0
 	if role == "human":
 		state["humans_inside"] += 1
 		_record_inside_human(character)
@@ -1498,6 +1503,7 @@ func _apply_quarantine(visitor: Dictionary, clue_score: int) -> void:
 	var character: Dictionary = visitor["character"]
 	var role: String = visitor["role"]
 	state["refusal_streak"] = 0
+	state["refused_humans_streak"] = 0
 	if role == "human":
 		state["humans_inside"] += 1
 		_record_inside_human(character)
@@ -1533,16 +1539,26 @@ func _apply_quarantine(visitor: Dictionary, clue_score: int) -> void:
 func _apply_reject(visitor: Dictionary, clue_score: int) -> void:
 	var character: Dictionary = visitor["character"]
 	var role: String = visitor["role"]
+	state["refusal_count"] = int(state.get("refusal_count", 0)) + 1
 	state["refusal_streak"] += 1
 	if role == "human":
+		state["refused_humans_streak"] = int(state.get("refused_humans_streak", 0)) + 1
 		state["missing"] += 1
 		_record_missing_identity(character, false)
 		state["abandonment"] = mini(10, state["abandonment"] + (2 if visitor["event"].get("chased", false) else 1))
 		state["trust"] = maxi(0, state["trust"] - 8)
+		state["outside_danger"] = mini(100, int(state.get("outside_danger", 0)) + 1 + int(state.get("refusal_streak", 0)) / 2)
 		_adjust_character_relation(character, -24, 30, "被拒之门外")
+		if int(state.get("refused_humans_streak", 0)) >= 2:
+			state["trust"] = maxi(0, int(state["trust"]) - 10)
+			state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 3)
+			_log("连续拒绝真人：屋内全员信任骤降，开始怀疑你的门禁判断。")
 		if visitor["event"].get("id", "") == "visitor_supplies":
 			state["supplies"] = maxi(0, int(state["supplies"]) - 8)
-			_log("拒绝携带物资的真人，明天的补给缺口更明显。")
+			state["stamina_cap_penalty"] = mini(30, int(state.get("stamina_cap_penalty", 0)) + 5)
+			state["stamina_max"] = maxi(70, 100 - int(state.get("stamina_cap_penalty", 0)))
+			state["stamina"] = mini(int(state.get("stamina", 0)), int(state.get("stamina_max", 100)))
+			_log("拒绝携带物资的真人，补给缺口压低了体力上限。")
 		if visitor["event"].get("id", "") == "mistaken_chased":
 			state["trust"] = maxi(0, int(state["trust"]) - 5)
 			state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 4)
@@ -1554,6 +1570,7 @@ func _apply_reject(visitor: Dictionary, clue_score: int) -> void:
 		else:
 			_log("你拒绝了真正的" + character.get("short", "") + "。屋内没人说话。")
 	elif role == "fake":
+		state["refused_humans_streak"] = 0
 		state["outside_danger"] = mini(100, state["outside_danger"] + 2)
 		state["trust"] = mini(100, state["trust"] + 2)
 		_adjust_character_relation(character, 2, -2, "同名伪人被挡在门外")
@@ -1563,6 +1580,7 @@ func _apply_reject(visitor: Dictionary, clue_score: int) -> void:
 			state["trust"] = maxi(0, int(state["trust"]) - 1)
 		_log("伪人被留在门外。门板另一侧传来很轻的笑声。")
 	else:
+		state["refused_humans_streak"] = 0
 		state["outside_danger"] = mini(100, state["outside_danger"] + 5)
 		state["mimic_learning"] = mini(100, state["mimic_learning"] + 3)
 		if character.get("id", "") == "taki_fake":
@@ -1991,10 +2009,9 @@ func _dawn_settlement(_events: Array) -> void:
 	_apply_relationship_pressure()
 	var food_cost := 8 + int(state["humans_inside"]) * 2
 	state["supplies"] = maxi(0, state["supplies"] - food_cost)
-	if state["supplies"] < 25:
-		state["stamina_max"] = maxi(70, 100 - (25 - int(state["supplies"])))
-	else:
-		state["stamina_max"] = 100
+	var supply_penalty := maxi(0, 25 - int(state["supplies"]))
+	var cap_penalty := int(state.get("stamina_cap_penalty", 0)) + supply_penalty
+	state["stamina_max"] = maxi(70, 100 - cap_penalty)
 	var recovery := 45
 	if state["guarded"]:
 		recovery += 15
@@ -2028,6 +2045,7 @@ func _record_day_summary(food_cost: int, recovery: int) -> void:
 	summary += "\n- 失踪 " + str(state.get("missing", 0)) + "，身份被盗 " + str(state.get("stolen", 0)) + "，可盗用外形 " + str(state.get("stolen_ids", []).size())
 	summary += "\n- 物资消耗 " + str(food_cost) + "，体力恢复 " + str(recovery) + "，下一夜外部危险 " + str(state.get("outside_danger", 0))
 	summary += "\n- 污染 " + str(state.get("contamination", 0)) + "，信任 " + str(state.get("trust", 0)) + "，线索可信 " + str(state.get("evidence_integrity", 0))
+	summary += "\n- 总拒绝 " + str(state.get("refusal_count", 0)) + "，连续拒绝真人 " + str(state.get("refused_humans_streak", 0)) + "，体力上限惩罚 " + str(state.get("stamina_cap_penalty", 0))
 	var summaries: Array = state.get("day_summaries", [])
 	summaries.append(summary)
 	if summaries.size() > 9:
@@ -2133,7 +2151,7 @@ func _show_ending(kind: String) -> void:
 
 
 func _final_stats() -> String:
-	return "Session：" + session_id + "\n可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0))
+	return "Session：" + session_id + "\n可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0))
 
 
 func _update_panels() -> void:
@@ -2148,7 +2166,7 @@ func _update_panels() -> void:
 	status += _bar("门锁", state["door"], 100, "#ffc878")
 	status += _bar("隔离", state["quarantine"], 100, "#8ab4ff")
 	status += _bar("物资", state["supplies"], 100, "#d5e878")
-	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n"
+	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + " / 连拒真人：" + str(state.get("refused_humans_streak", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + "\n"
 	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
 	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"
