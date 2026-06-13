@@ -320,10 +320,13 @@ func _start_new_game() -> void:
 		"evidence_integrity": 100,
 		"mimic_learning": 0,
 		"humans_inside": 0,
+		"inside_human_ids": [],
 		"fakes_inside": 0,
 		"mimics_inside": 0,
 		"missing": 0,
 		"stolen": 0,
+		"missing_ids": [],
+		"stolen_ids": [],
 		"refusal_streak": 0,
 		"guarded": false,
 		"code_phrase": "",
@@ -538,6 +541,12 @@ func _generate_visitors() -> void:
 		else:
 			character = pool[i % pool.size()]
 		var event: Dictionary = door_events[rng.randi_range(0, door_events.size() - 1)]
+		if day >= 5 and roles[i] != "human" and (!state.get("missing_ids", []).is_empty() or !state.get("stolen_ids", []).is_empty()) and rng.randi_range(1, 100) <= 65:
+			var stolen_character := _pick_stolen_identity()
+			if !stolen_character.is_empty():
+				character = stolen_character
+				event = _door_event_by_id("visitor_duplicate")
+				_log("身份被盗回归预警：" + character.get("short", "") + "的外形再次出现在门外。")
 		if day >= 4 and roles[i] == "human" and rng.randf() < 0.30:
 			event = _door_event_by_id("visitor_chased")
 		if day >= 5 and roles[i] != "human" and rng.randf() < 0.24:
@@ -738,6 +747,7 @@ func _resolve_chase_timeout(visitor: Dictionary) -> void:
 	if visitor["role"] == "human":
 		state["missing"] += 1
 		state["stolen"] += 1
+		_record_missing_identity(character, true)
 		state["abandonment"] = mini(10, int(state["abandonment"]) + 2)
 		state["trust"] = maxi(0, int(state["trust"]) - 10)
 		state["outside_danger"] = mini(100, int(state["outside_danger"]) + 8)
@@ -1070,6 +1080,7 @@ func _apply_admit(visitor: Dictionary, clue_score: int) -> void:
 	state["refusal_streak"] = 0
 	if role == "human":
 		state["humans_inside"] += 1
+		_record_inside_human(character)
 		state["trust"] = mini(100, state["trust"] + 4)
 		if visitor["event"].get("id", "") == "visitor_supplies":
 			state["supplies"] = mini(100, state["supplies"] + 18)
@@ -1099,6 +1110,7 @@ func _apply_quarantine(visitor: Dictionary, clue_score: int) -> void:
 	state["refusal_streak"] = 0
 	if role == "human":
 		state["humans_inside"] += 1
+		_record_inside_human(character)
 		state["trust"] = mini(100, state["trust"] + (4 if visitor["event"].get("chased", false) else 1))
 		var wear := rng.randi_range(8, 14) if visitor["event"].get("chased", false) else rng.randi_range(4, 10)
 		state["quarantine"] = maxi(0, state["quarantine"] - wear)
@@ -1129,10 +1141,12 @@ func _apply_reject(visitor: Dictionary, clue_score: int) -> void:
 	state["refusal_streak"] += 1
 	if role == "human":
 		state["missing"] += 1
+		_record_missing_identity(character, false)
 		state["abandonment"] = mini(10, state["abandonment"] + (2 if visitor["event"].get("chased", false) else 1))
 		state["trust"] = maxi(0, state["trust"] - 8)
 		if rng.randi_range(1, 100) <= 45 + int(state["outside_danger"]):
 			state["stolen"] += 1
+			_record_missing_identity(character, true)
 			_log("你拒绝了真正的" + character.get("short", "") + "。走廊安静后，她的身份进入可盗用池。")
 		else:
 			_log("你拒绝了真正的" + character.get("short", "") + "。屋内没人说话。")
@@ -1157,6 +1171,7 @@ func _apply_gun(visitor: Dictionary, clue_score: int) -> void:
 	state["refusal_streak"] = 0
 	if role == "human" and clue_score < 3:
 		state["missing"] += 1
+		_record_missing_identity(character, true)
 		state["abandonment"] = mini(10, state["abandonment"] + 3)
 		state["trust"] = maxi(0, state["trust"] - 18)
 		_log("驱逐装置误伤了真正的" + character.get("short", "") + "。海铃什么也没说。")
@@ -1469,6 +1484,7 @@ func _dawn_settlement(_events: Array) -> void:
 		if rng.randi_range(1, 100) <= fake_pressure:
 			state["missing"] += 1
 			state["stolen"] += 1
+			_steal_random_inside_identity()
 			_log("黎明前有人失踪，身份被盗用池扩大。")
 	var food_cost := 8 + int(state["humans_inside"]) * 2
 	state["supplies"] = maxi(0, state["supplies"] - food_cost)
@@ -1506,7 +1522,7 @@ func _dawn_text() -> String:
 	var text := "[color=#effff7]天亮了。[/color]\n\n"
 	text += "门锁：" + str(state["door"]) + " / 隔离区：" + str(state["quarantine"]) + "\n"
 	text += "屋内可信人类：" + str(state["humans_inside"]) + " / 入侵伪人：" + str(state["fakes_inside"] + state["mimics_inside"]) + "\n"
-	text += "失踪：" + str(state["missing"]) + " / 身份被盗：" + str(state["stolen"]) + "\n\n"
+	text += "失踪：" + str(state["missing"]) + " / 身份被盗：" + str(state["stolen"]) + " / 可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n\n"
 	if state["evidence_integrity"] < 45:
 		text += "[color=#ff8f8f]线索板上有几张卡片的位置不对。[/color]\n"
 	if state["trust"] < 35:
@@ -1598,7 +1614,7 @@ func _show_ending(kind: String) -> void:
 
 
 func _final_stats() -> String:
-	return "可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n见死不救：" + str(state.get("abandonment", 0))
+	return "可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n见死不救：" + str(state.get("abandonment", 0))
 
 
 func _update_panels() -> void:
@@ -1611,7 +1627,7 @@ func _update_panels() -> void:
 	status += _bar("门锁", state["door"], 100, "#ffc878")
 	status += _bar("隔离", state["quarantine"], 100, "#8ab4ff")
 	status += _bar("物资", state["supplies"], 100, "#d5e878")
-	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n"
+	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n"
 	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
 	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"
@@ -1706,3 +1722,43 @@ func _pick(items: Array) -> String:
 	if items.is_empty():
 		return ""
 	return str(items[rng.randi_range(0, items.size() - 1)])
+
+
+func _record_missing_identity(character: Dictionary, stolen_now := false) -> void:
+	var id := str(character.get("id", ""))
+	if id.is_empty() or id == "taki_fake":
+		return
+	if !(id in state["missing_ids"]):
+		state["missing_ids"].append(id)
+	if stolen_now and !(id in state["stolen_ids"]):
+		state["stolen_ids"].append(id)
+
+
+func _record_inside_human(character: Dictionary) -> void:
+	var id := str(character.get("id", ""))
+	if id.is_empty() or id == "taki_fake":
+		return
+	if !(id in state["inside_human_ids"]):
+		state["inside_human_ids"].append(id)
+
+
+func _steal_random_inside_identity() -> void:
+	var pool: Array = state.get("inside_human_ids", [])
+	if pool.is_empty():
+		return
+	var id := str(pool[rng.randi_range(0, pool.size() - 1)])
+	pool.erase(id)
+	state["inside_human_ids"] = pool
+	_record_missing_identity(_character_by_id(id), true)
+
+
+func _pick_stolen_identity() -> Dictionary:
+	var pool: Array = state.get("stolen_ids", [])
+	if pool.is_empty():
+		pool = state.get("missing_ids", [])
+	if pool.is_empty():
+		return {}
+	var id := str(pool[rng.randi_range(0, pool.size() - 1)])
+	if !(id in state["stolen_ids"]):
+		state["stolen_ids"].append(id)
+	return _character_by_id(id)
