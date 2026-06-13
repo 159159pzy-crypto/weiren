@@ -22,6 +22,7 @@
     {"id":"sleep_door_unlock","name":"玄关锁响","text":"门锁发出金属松动声，有人在另一侧试探。"},
     {"id":"sleep_crying","name":"有人在哭","text":"哭声从隔离区传来，声音像熟人，也像录音。"},
     {"id":"sleep_bedside","name":"床边人影","text":"你睁眼时，看见床边站着一个几乎不呼吸的人影。"},
+    {"id":"sleep_duplicate_voice","name":"门外熟人声音","text":"门外传来熟人的声音，轻轻叫你的名字，语气像是真的害怕。"},
     {"id":"sleep_mirror_delay","name":"镜中延迟","text":"洗手间镜子里的你慢了半拍。"},
     {"id":"sleep_window_tap","name":"窗户轻敲","text":"阳台窗被轻轻敲了三下，像今晚的暗号。"}
   ]

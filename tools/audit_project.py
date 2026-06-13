@@ -166,7 +166,9 @@ def audit_data() -> list[str]:
     require(len(events.get("door_events", [])) >= 13, "Expected at least 13 door events")
     for event_id in ["visitor_asks_someone", "visitor_childlike", "mistaken_chased"]:
         require(event_id in door_event_ids, f"Missing expanded door event {event_id}")
-    require(len(events.get("sleep_events", [])) >= 9, "Expected at least 9 sleep events")
+    require(len(events.get("sleep_events", [])) >= 10, "Expected at least 10 sleep events")
+    sleep_event_ids = {event.get("id", "") for event in events.get("sleep_events", [])}
+    require("sleep_duplicate_voice" in sleep_event_ids, "Missing sleep_duplicate_voice sleep event")
     require(sorted(row.get("day", 0) for row in broadcasts) == list(range(1, 10)), "Broadcasts must cover days 1-9")
     broadcast_ids = {row.get("id", "") for row in broadcasts}
     for broadcast_id in ["broadcast_teeth", "broadcast_identity_theft", "broadcast_cleaner", "broadcast_self_check", "broadcast_final_judgment"]:
@@ -195,7 +197,7 @@ def audit_assets() -> list[str]:
     roles = {entry.get("role", "") for entry in cg_entries}
     triggers = {entry.get("trigger", "") for entry in cg_entries}
     require("sleep" in roles and "ending" in roles and "door_event" in roles and "inspection" in roles, "CG manifest must cover sleep, endings, door events, and inspections")
-    for trigger in ["sleep_living_noise", "sleep_kitchen_water", "sleep_clueboard", "sleep_tv_on", "sleep_door_unlock", "sleep_crying", "sleep_bedside", "sleep_mirror_delay", "sleep_window_tap"]:
+    for trigger in ["sleep_living_noise", "sleep_kitchen_water", "sleep_clueboard", "sleep_tv_on", "sleep_door_unlock", "sleep_crying", "sleep_bedside", "sleep_duplicate_voice", "sleep_mirror_delay", "sleep_window_tap"]:
         require(trigger in triggers, f"CG manifest missing sleep trigger {trigger}")
     for trigger in ["true", "good", "neutral", "no_one", "perfect_band", "purple", "identity", "door", "hidden", "distortion"]:
         require(trigger in triggers, f"CG manifest missing ending trigger {trigger}")
@@ -380,7 +382,7 @@ def audit_godot() -> list[str]:
         "stamina_cost",
     ]:
         require(token in main, f"Main.gd missing {token}")
-    for token in ["bg_title_night_16x9.png", "bg_prep_clueboard_16x9.png", "bg_quarantine_glass_16x9.png", "bg_dawn_settlement_16x9.png", "fx_contamination_overlay.png", "fx_door_damage_overlay.png", "fx_outside_danger_overlay.png", "fx_trust_break_overlay.png", "fx_evidence_noise_overlay.png", "fx_mimic_learning_overlay.png", "ui_icon_stamina.png", "ui_icon_contamination.png", "ui_icon_door.png", "ui_icon_quarantine.png", "ui_icon_supplies.png", "ui_icon_trust.png", "ui_icon_danger.png", "ui_icon_evidence.png", "char_human_stress.png", "char_fake_doubt.png", "char_mimic_doubt.png", "char_rikki_stress.png", "cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_calm_16x9.png", "cg_door_panic_16x9.png", "cg_door_injured_16x9.png", "cg_door_knows_inside_16x9.png", "cg_door_wrong_code_16x9.png", "cg_door_silent_16x9.png", "cg_door_fake_radio_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_inspect_teeth_16x9.png", "cg_inspect_room_search_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
+    for token in ["bg_title_night_16x9.png", "bg_prep_clueboard_16x9.png", "bg_quarantine_glass_16x9.png", "bg_dawn_settlement_16x9.png", "fx_contamination_overlay.png", "fx_door_damage_overlay.png", "fx_outside_danger_overlay.png", "fx_trust_break_overlay.png", "fx_evidence_noise_overlay.png", "fx_mimic_learning_overlay.png", "ui_icon_stamina.png", "ui_icon_contamination.png", "ui_icon_door.png", "ui_icon_quarantine.png", "ui_icon_supplies.png", "ui_icon_trust.png", "ui_icon_danger.png", "ui_icon_evidence.png", "char_human_stress.png", "char_fake_doubt.png", "char_mimic_doubt.png", "char_rikki_stress.png", "cg_sleep_living_noise_16x9.png", "cg_sleep_duplicate_voice_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_calm_16x9.png", "cg_door_panic_16x9.png", "cg_door_injured_16x9.png", "cg_door_knows_inside_16x9.png", "cg_door_wrong_code_16x9.png", "cg_door_silent_16x9.png", "cg_door_fake_radio_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_inspect_teeth_16x9.png", "cg_inspect_room_search_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
         require(token in main, f"Main.gd missing CG mapping {token}")
     for stale in ["char_human_visitor_hui.png", "char_mimic_visitor_hui.png", "char_another_rikki_hui.png"]:
         require(stale not in main, f"Main.gd still references old character asset {stale}")

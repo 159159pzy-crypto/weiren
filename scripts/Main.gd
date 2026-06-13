@@ -61,6 +61,7 @@ const SLEEP_CG := {
 	"sleep_door_unlock": "res://assets/generated/cg_sleep_door_unlock_16x9.png",
 	"sleep_crying": "res://assets/generated/cg_sleep_crying_16x9.png",
 	"sleep_bedside": "res://assets/generated/cg_sleep_bedside_16x9.png",
+	"sleep_duplicate_voice": "res://assets/generated/cg_sleep_duplicate_voice_16x9.png",
 	"sleep_mirror_delay": "res://assets/generated/cg_sleep_mirror_delay_16x9.png",
 	"sleep_window_tap": "res://assets/generated/cg_sleep_window_tap_16x9.png",
 }
@@ -2149,6 +2150,10 @@ func _resolve_sleep_event(events: Array, index: int, choice: String) -> void:
 		elif ev.get("id", "") == "sleep_mirror_delay":
 			state["contamination"] = mini(100, state["contamination"] + 8)
 			_log("镜中的延迟变成新的污染证据。")
+		elif ev.get("id", "") == "sleep_duplicate_voice":
+			state["outside_danger"] = mini(100, int(state.get("outside_danger", 0)) + 3)
+			state["evidence_integrity"] = mini(100, int(state.get("evidence_integrity", 0)) + 8)
+			_log("你在猫眼里确认门外熟人声音的位置不对，记录下一条夜间声纹线索。")
 		else:
 			state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 4)
 			_log("你查看了" + ev.get("name", "") + "，得到一条模糊线索。")
@@ -2162,6 +2167,10 @@ func _resolve_sleep_event(events: Array, index: int, choice: String) -> void:
 		elif ev.get("id", "") == "sleep_window_tap":
 			state["outside_danger"] = mini(100, state["outside_danger"] + 4)
 			_log("你从门缝看见窗外有东西学着暗号敲击。")
+		elif ev.get("id", "") == "sleep_duplicate_voice":
+			state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 3)
+			state["evidence_integrity"] = mini(100, int(state.get("evidence_integrity", 0)) + 6)
+			_log("你从门缝听见熟人声音和屋内呼吸重叠，自证压力上升。")
 		else:
 			state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 5)
 			_log("你从门缝观察，没有暴露位置，但污染像冷雾一样贴近。")
@@ -2178,6 +2187,9 @@ func _resolve_sleep_event(events: Array, index: int, choice: String) -> void:
 			_log("手电光照到门锁上的新划痕，你及时压住锁舌。")
 		elif ev.get("id", "") == "sleep_clueboard":
 			_log("手电光下，线索卡边缘露出新折痕。篡改顺序被记录。")
+		elif ev.get("id", "") == "sleep_duplicate_voice":
+			state["outside_danger"] = mini(100, int(state.get("outside_danger", 0)) + 2)
+			_log("手电光掠过猫眼，门外熟人声音忽然停住，像录音被切断。")
 		else:
 			state["mimic_learning"] = mini(100, state["mimic_learning"] + 2)
 			_log("手电照亮了异常，也暴露了你会优先看哪里。")
@@ -2190,6 +2202,10 @@ func _resolve_sleep_event(events: Array, index: int, choice: String) -> void:
 			state["trust"] = maxi(0, state["trust"] - 5)
 			state["abandonment"] = mini(10, state["abandonment"] + 1)
 			_log("你锁门继续睡。哭声停了，屋内信任也少了一截。")
+		elif ev.get("id", "") == "sleep_duplicate_voice":
+			state["outside_danger"] = mini(100, int(state.get("outside_danger", 0)) + 5)
+			state["mimic_learning"] = mini(100, int(state.get("mimic_learning", 0)) + 4)
+			_log("你锁门继续睡。门外熟人声音学会了你的沉默。")
 		else:
 			state["stamina"] = mini(state["stamina_max"], state["stamina"] + 8)
 			_log("你锁门继续睡，换来一点体力，也放弃了一条夜间线索。")
@@ -2210,6 +2226,12 @@ func _resolve_sleep_event(events: Array, index: int, choice: String) -> void:
 			state["door"] = maxi(0, state["door"] - rng.randi_range(10, 22))
 		elif ev.get("id", "") == "sleep_clueboard":
 			state["evidence_integrity"] = maxi(0, state["evidence_integrity"] - rng.randi_range(10, 24))
+		elif ev.get("id", "") == "sleep_duplicate_voice":
+			if rng.randi_range(1, 100) <= 35 and int(state.get("humans_inside", 0)) > 0:
+				state["missing"] = int(state.get("missing", 0)) + 1
+				state["stolen"] = int(state.get("stolen", 0)) + 1
+				_steal_random_inside_identity()
+			state["outside_danger"] = mini(100, int(state.get("outside_danger", 0)) + 7)
 		else:
 			state["contamination"] = mini(100, state["contamination"] + 3)
 		_log("你选择装睡。早上醒来时，屋里有东西变了。")

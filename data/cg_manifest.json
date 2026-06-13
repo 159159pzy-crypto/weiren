@@ -78,6 +78,15 @@
       "loras": []
     },
     {
+      "id": "cg_sleep_duplicate_voice_16x9",
+      "role": "sleep",
+      "trigger": "sleep_duplicate_voice",
+      "asset": "assets/generated/cg_sleep_duplicate_voice_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
       "id": "cg_sleep_mirror_delay_16x9",
       "role": "sleep",
       "trigger": "sleep_mirror_delay",
