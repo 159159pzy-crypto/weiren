@@ -144,6 +144,8 @@ def audit_godot() -> list[str]:
         require(stale not in main, f"Main.gd still references old character asset {stale}")
     for label in ["分配房间", "设定今日暗号", "选择重点检测设备", "分配物资"]:
         require(label in main, f"Main.gd missing prep action {label}")
+    for label in ["从门缝观察", "拿手电筒查看", "锁门继续睡"]:
+        require(label in main, f"Main.gd missing sleep action {label}")
     for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed"]:
         require(state_key in main, f"Main.gd missing prep state {state_key}")
     require('script = ExtResource("1_main")' in scene, "Main scene does not attach Main.gd")

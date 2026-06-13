@@ -1188,6 +1188,9 @@ func _show_sleep_event(events: Array, index: int) -> void:
 	_update_panels()
 	_clear_actions()
 	_add_action("起床查看（体力 8）", func(): _resolve_sleep_event(events, index, "check"))
+	_add_action("从门缝观察（体力 4）", func(): _resolve_sleep_event(events, index, "peek"))
+	_add_action("拿手电筒查看（体力 6，物资 1）", func(): _resolve_sleep_event(events, index, "flashlight"))
+	_add_action("锁门继续睡（门锁 -3）", func(): _resolve_sleep_event(events, index, "lock_sleep"))
 	_add_action("装睡", func(): _resolve_sleep_event(events, index, "ignore"))
 	_add_action("叫醒可信的人（信任 -3）", func(): _resolve_sleep_event(events, index, "call"))
 
@@ -1210,6 +1213,47 @@ func _resolve_sleep_event(events: Array, index: int, choice: String) -> void:
 		else:
 			state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 4)
 			_log("你查看了" + ev.get("name", "") + "，得到一条模糊线索。")
+	elif choice == "peek":
+		if !_spend_stamina(4):
+			return
+		state["contamination"] = mini(100, state["contamination"] + 4)
+		if ev.get("id", "") == "sleep_bedside":
+			state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 8)
+			_log("你从门缝看见床边人影的脚尖没有影子。")
+		elif ev.get("id", "") == "sleep_window_tap":
+			state["outside_danger"] = mini(100, state["outside_danger"] + 4)
+			_log("你从门缝看见窗外有东西学着暗号敲击。")
+		else:
+			state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 5)
+			_log("你从门缝观察，没有暴露位置，但污染像冷雾一样贴近。")
+	elif choice == "flashlight":
+		if state["supplies"] < 1:
+			_notice("手电没有备用电池。")
+			return
+		if !_spend_stamina(6):
+			return
+		state["supplies"] -= 1
+		state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 12)
+		if ev.get("id", "") == "sleep_door_unlock":
+			state["door"] = maxi(0, state["door"] - 2)
+			_log("手电光照到门锁上的新划痕，你及时压住锁舌。")
+		elif ev.get("id", "") == "sleep_clueboard":
+			_log("手电光下，线索卡边缘露出新折痕。篡改顺序被记录。")
+		else:
+			state["mimic_learning"] = mini(100, state["mimic_learning"] + 2)
+			_log("手电照亮了异常，也暴露了你会优先看哪里。")
+	elif choice == "lock_sleep":
+		state["door"] = maxi(0, state["door"] - 3)
+		if ev.get("id", "") == "sleep_door_unlock":
+			state["door"] = maxi(0, state["door"] - 8)
+			_log("你反锁卧室继续睡。玄关锁撑住了，但金属疲劳更严重。")
+		elif ev.get("id", "") == "sleep_crying":
+			state["trust"] = maxi(0, state["trust"] - 5)
+			state["abandonment"] = mini(10, state["abandonment"] + 1)
+			_log("你锁门继续睡。哭声停了，屋内信任也少了一截。")
+		else:
+			state["stamina"] = mini(state["stamina_max"], state["stamina"] + 8)
+			_log("你锁门继续睡，换来一点体力，也放弃了一条夜间线索。")
 	elif choice == "call":
 		var trust_cost := 1 if bool(state.get("supplies_distributed", false)) else 3
 		state["trust"] = maxi(0, state["trust"] - trust_cost)
