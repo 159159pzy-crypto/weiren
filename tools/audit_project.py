@@ -138,6 +138,8 @@ def audit_godot() -> list[str]:
         "_prep_accept_self_check",
         "_prep_refuse_self_check",
         "_apply_self_suspicion_pressure",
+        "_refresh_gun_charges",
+        "_prep_calibrate_gun",
         "_record_missing_identity",
         "_pick_stolen_identity",
         "_steal_random_inside_identity",
@@ -159,6 +161,8 @@ def audit_godot() -> list[str]:
         require(label in main, f"Main.gd missing prep action {label}")
     for label in ["接受屋内自检", "拒绝自检并继续指挥"]:
         require(label in main, f"Main.gd missing self suspicion action {label}")
+    for token in ["gun_charges", "校准驱逐装置", "驱逐充能", "清除权"]:
+        require(token in main, f"Main.gd missing gun faction token {token}")
     for label in ["从门缝观察", "拿手电筒查看", "锁门继续睡"]:
         require(label in main, f"Main.gd missing sleep action {label}")
     for label in ["室内自由对话", "共同记忆盘问", "屋内牙齿/虹膜检查", "屋内指泥/足迹检测", "屋内呼吸/影子观察"]:

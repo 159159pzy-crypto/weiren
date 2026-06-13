@@ -327,6 +327,7 @@ func _start_new_game() -> void:
 		"stolen": 0,
 		"missing_ids": [],
 		"stolen_ids": [],
+		"gun_charges": 0,
 		"refusal_streak": 0,
 		"guarded": false,
 		"code_phrase": "",
@@ -353,6 +354,7 @@ func _begin_day() -> void:
 	state["supplies_distributed"] = false
 	state["room_search_bonus"] = 0
 	_apply_self_suspicion_pressure()
+	_refresh_gun_charges()
 	_generate_visitors()
 	_set_background(BG_ROOM)
 	var rule := _rule_for_day(state["day"])
@@ -370,6 +372,8 @@ func _begin_day() -> void:
 	_add_action("分配物资（物资 10）", _prep_distribute_supplies)
 	_add_action("整理线索板（体力 6）", _prep_sort_evidence)
 	_add_action("安排守夜（物资 8，信任 -2）", _prep_set_guard)
+	if int(state["day"]) >= 7:
+		_add_action("校准驱逐装置（体力 10，物资 5）", _prep_calibrate_gun)
 	if int(state["day"]) >= 8:
 		_add_action("接受屋内自检（体力 8，信任 +）", _prep_accept_self_check)
 		_add_action("拒绝自检并继续指挥（信任 -8）", _prep_refuse_self_check)
@@ -468,6 +472,29 @@ func _prep_refuse_self_check() -> void:
 	state["trust"] = maxi(0, int(state["trust"]) - 8)
 	state["mimic_learning"] = mini(100, int(state["mimic_learning"]) + 4)
 	_log("你拒绝自检。屋内沉默了一秒，伪人也学会了这秒沉默。")
+	_begin_day()
+
+
+func _refresh_gun_charges() -> void:
+	if int(state.get("day", 1)) < 7:
+		state["gun_charges"] = 0
+		return
+	state["gun_charges"] = mini(3, maxi(1, int(state.get("gun_charges", 0))))
+
+
+func _prep_calibrate_gun() -> void:
+	if state["supplies"] < 5:
+		_notice("物资不足，无法校准驱逐装置。")
+		return
+	if int(state.get("gun_charges", 0)) >= 3:
+		_notice("驱逐装置已经满充能。")
+		return
+	if !_spend_stamina(10):
+		return
+	state["supplies"] -= 5
+	state["gun_charges"] = mini(3, int(state.get("gun_charges", 0)) + 1)
+	state["trust"] = maxi(0, int(state["trust"]) - 2)
+	_log("海铃校准驱逐装置。清除权变得可用，也让屋内更安静。")
 	_begin_day()
 
 
@@ -669,7 +696,7 @@ func _show_current_visitor() -> void:
 	_add_action("放入隔离区", func(): _decide_visitor("quarantine"))
 	_add_action("驱逐/拒绝开门", func(): _decide_visitor("reject"))
 	if state["day"] >= 7:
-		_add_action("使用驱逐装置（体力 15）", func(): _decide_visitor("gun"))
+		_add_action("使用驱逐装置（体力 15，充能 " + str(state.get("gun_charges", 0)) + "）", func(): _decide_visitor("gun"))
 
 
 func _visitor_intro(visitor: Dictionary) -> String:
@@ -1044,6 +1071,10 @@ func _decide_visitor(decision: String) -> void:
 		if state["day"] < 7:
 			_notice("驱逐装置还不可用。")
 			return
+		if int(state.get("gun_charges", 0)) <= 0:
+			_notice("驱逐装置没有充能。")
+			return
+		state["gun_charges"] = maxi(0, int(state.get("gun_charges", 0)) - 1)
 	if decision == "quarantine":
 		if state["quarantine_used"] >= 2:
 			_notice("今晚隔离区已经使用到极限。")
@@ -1174,12 +1205,15 @@ func _apply_gun(visitor: Dictionary, clue_score: int) -> void:
 		_record_missing_identity(character, true)
 		state["abandonment"] = mini(10, state["abandonment"] + 3)
 		state["trust"] = maxi(0, state["trust"] - 18)
+		state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 18)
 		_log("驱逐装置误伤了真正的" + character.get("short", "") + "。海铃什么也没说。")
 	elif role == "human":
 		state["trust"] = maxi(0, state["trust"] - 10)
+		state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 8)
 		_log(character.get("short", "") + "被强制驱离。她也许是真的，但你没有留下余地。")
 	else:
 		state["contamination"] = maxi(0, state["contamination"] - 4)
+		state["trust"] = maxi(0, int(state["trust"]) - 2)
 		if role == "mimic" and character.get("id", "") == "taki_fake" and clue_score >= 4:
 			final_mimic_identified = true
 		_log("驱逐装置启动，门外的轮廓像湿纸一样塌陷。")
@@ -1627,7 +1661,7 @@ func _update_panels() -> void:
 	status += _bar("门锁", state["door"], 100, "#ffc878")
 	status += _bar("隔离", state["quarantine"], 100, "#8ab4ff")
 	status += _bar("物资", state["supplies"], 100, "#d5e878")
-	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n"
+	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n"
 	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
 	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"
