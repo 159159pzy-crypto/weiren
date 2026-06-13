@@ -537,6 +537,8 @@ func _start_new_game() -> void:
 		"quarantine": 100,
 		"quarantine_capacity": 1,
 		"quarantine_used": 0,
+		"quarantine_followups": 0,
+		"quarantine_basic_tests": 0,
 		"trust": 62,
 		"low_trust_incidents": 0,
 		"outside_danger": 16,
@@ -1590,6 +1592,8 @@ func _decide_visitor(decision: String) -> void:
 			return
 		state["quarantine_used"] += 1
 		_apply_quarantine(visitor, clue_score)
+		_show_quarantine_followup(visitor)
+		return
 	elif decision == "admit":
 		_apply_admit(visitor, clue_score)
 	elif decision == "reject":
@@ -1601,6 +1605,7 @@ func _decide_visitor(decision: String) -> void:
 	_check_immediate_failure()
 	if current_phase == "ending":
 		return
+	current_phase = "door"
 	_show_current_visitor()
 
 
@@ -1688,6 +1693,71 @@ func _apply_quarantine(visitor: Dictionary, clue_score: int) -> void:
 			final_mimic_identified = true
 			state["final_judgment"] = mini(100, int(state.get("final_judgment", 0)) + 25)
 		_log("变身怪撞上隔离玻璃，灯光里影子慢了半拍。")
+
+
+func _show_quarantine_followup(visitor: Dictionary) -> void:
+	current_phase = "quarantine_followup"
+	var character: Dictionary = visitor["character"]
+	_set_background(str(ENVIRONMENT_BG.get("quarantine", BG_ROOM)))
+	_set_character_portrait(_portrait_for_visitor(visitor))
+	title_label.text = "第 " + str(state["day"]) + " 夜 / 隔离区审问"
+	subtitle_label.text = character.get("name", "") + " / 玻璃后临时收容"
+	event_label.text = "[color=#ffc878]隔离区[/color]\n容量 " + str(state.get("quarantine_used", 0)) + "/" + str(mini(2, int(state.get("quarantine_capacity", 1)))) + "，耐久 " + str(state.get("quarantine", 0))
+	narrative.text = "[color=#effff7]隔离区审问[/color]\n\n" + character.get("short", "她") + "站在玄关玻璃后，声音被密封条切得很薄。\n\n[color=#9ef0dc]已发现线索：" + str(visitor["discovered"].size()) + "/" + str(visitor["evidence"].size()) + "[/color]\n" + _visitor_clue_text(visitor)
+	_update_panels()
+	_clear_actions()
+	_add_action("隔着玻璃继续盘问（体力 2）", func(): _quarantine_glass_question(visitor))
+	_add_action("隔离区基础检测（体力 4，耐久 -）", func(): _quarantine_basic_test(visitor))
+	_add_action("结束隔离处理，记录为临时收容", func(): _finish_quarantine_followup(visitor))
+
+
+func _quarantine_glass_question(visitor: Dictionary) -> void:
+	if !_spend_stamina(2):
+		return
+	state["quarantine_followups"] = int(state.get("quarantine_followups", 0)) + 1
+	var character: Dictionary = visitor["character"]
+	var clue := _reveal_next_clue(visitor, ["memory", "relation", "behavior", "environment"], _inspection_chance("environment", 82))
+	if clue.is_empty():
+		state["mimic_learning"] = mini(100, int(state.get("mimic_learning", 0)) + 2)
+		state["trust"] = maxi(0, int(state.get("trust", 0)) - (2 if visitor.get("role", "") == "human" else 0))
+		_log("隔着玻璃继续盘问没有得到新结论。" + ("真人长时间隔离，屋内信任下降。" if visitor.get("role", "") == "human" else "玻璃后的回答像是在学习你的问题。"))
+	else:
+		state["evidence_integrity"] = mini(100, int(state.get("evidence_integrity", 0)) + 4)
+		if character.get("id", "") == "taki_fake" and bool(clue.get("incriminating", false)):
+			final_mimic_identified = true
+		_log("隔着玻璃继续盘问发现：" + clue.get("title", "新线索") + "。")
+	_show_quarantine_followup(visitor)
+
+
+func _quarantine_basic_test(visitor: Dictionary) -> void:
+	if !_spend_stamina(4):
+		return
+	state["quarantine_basic_tests"] = int(state.get("quarantine_basic_tests", 0)) + 1
+	var wear := 5 if visitor.get("role", "") == "human" else (12 if visitor.get("role", "") == "fake" else 18)
+	state["quarantine"] = maxi(0, int(state.get("quarantine", 0)) - wear)
+	var categories := ["teeth", "iris", "finger", "footprint", "breath", "shadow", "behavior"]
+	var clue := _reveal_next_clue(visitor, categories, _inspection_chance("breath_shadow", 88))
+	if clue.is_empty():
+		_log("隔离区基础检测没有定论，只在玻璃上留下新的裂纹。")
+	else:
+		state["evidence_integrity"] = mini(100, int(state.get("evidence_integrity", 0)) + 5)
+		if visitor.get("role", "") != "human" and bool(clue.get("incriminating", false)):
+			state["contamination"] = maxi(0, int(state.get("contamination", 0)) - 4)
+			if visitor["character"].get("id", "") == "taki_fake":
+				final_mimic_identified = true
+		_log("隔离区基础检测确认：" + clue.get("title", "证据") + "。")
+	_show_quarantine_followup(visitor)
+	_set_background(str(INSPECTION_CG.get("environment", ENVIRONMENT_BG.get("quarantine", BG_ROOM))))
+	narrative.text += "\n\n[color=#8de8d0]隔离区检测特写[/color]\n玻璃、检测板和临时虹膜灯都被拍进线索板。"
+
+
+func _finish_quarantine_followup(visitor: Dictionary) -> void:
+	visitor["decided"] = true
+	current_visitor_index += 1
+	_check_immediate_failure()
+	if current_phase == "ending":
+		return
+	_show_current_visitor()
 
 
 func _apply_reject(visitor: Dictionary, clue_score: int) -> void:

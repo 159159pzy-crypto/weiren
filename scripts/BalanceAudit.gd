@@ -48,6 +48,8 @@ func _run_strategy(seed_text: String, strategy: String) -> Dictionary:
 				_play_prep_strategy(strategy)
 			"door":
 				_play_door_strategy(strategy)
+			"quarantine_followup":
+				_play_quarantine_strategy(strategy)
 			"investigation":
 				_play_investigation_strategy(strategy)
 			"sleep":
@@ -132,6 +134,21 @@ func _play_door_strategy(strategy: String) -> void:
 				scene._decide_visitor("reject")
 		_:
 			scene._decide_visitor("reject")
+
+
+func _play_quarantine_strategy(strategy: String) -> void:
+	if scene.current_visitor_index >= scene.current_visitors.size():
+		scene._show_investigation()
+		return
+	var visitor: Dictionary = scene.current_visitors[scene.current_visitor_index]
+	if !bool(visitor.get("audit_quarantine_checked", false)):
+		visitor["audit_quarantine_checked"] = true
+		if strategy == "truth":
+			scene._quarantine_basic_test(visitor)
+		else:
+			scene._quarantine_glass_question(visitor)
+		return
+	scene._finish_quarantine_followup(visitor)
 
 
 func _quarantine_available() -> bool:
