@@ -150,6 +150,69 @@
       "loras": []
     },
     {
+      "id": "cg_inspect_teeth_16x9",
+      "role": "inspection",
+      "trigger": "teeth",
+      "asset": "assets/generated/cg_inspect_teeth_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_inspect_iris_16x9",
+      "role": "inspection",
+      "trigger": "iris",
+      "asset": "assets/generated/cg_inspect_iris_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_inspect_finger_16x9",
+      "role": "inspection",
+      "trigger": "finger",
+      "asset": "assets/generated/cg_inspect_finger_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_inspect_breath_shadow_16x9",
+      "role": "inspection",
+      "trigger": "breath_shadow",
+      "asset": "assets/generated/cg_inspect_breath_shadow_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_inspect_footprint_16x9",
+      "role": "inspection",
+      "trigger": "footprint",
+      "asset": "assets/generated/cg_inspect_footprint_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_inspect_environment_16x9",
+      "role": "inspection",
+      "trigger": "environment",
+      "asset": "assets/generated/cg_inspect_environment_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_inspect_room_search_16x9",
+      "role": "inspection",
+      "trigger": "room_search",
+      "asset": "assets/generated/cg_inspect_room_search_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
       "id": "cg_ending_true_16x9",
       "role": "ending",
       "trigger": "true",

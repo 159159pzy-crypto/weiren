@@ -60,6 +60,48 @@ def add_shadow_figure(image: Image.Image, x: int, y: int, scale: float, alpha: i
     return Image.alpha_composite(image.convert("RGBA"), layer.filter(ImageFilter.GaussianBlur(5))).convert("RGB")
 
 
+def add_inspection_marks(image: Image.Image, kind: str) -> Image.Image:
+    layer = Image.new("RGBA", SIZE, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+    cyan = (125, 255, 230, 170)
+    red = (255, 86, 86, 150)
+    amber = (255, 196, 92, 145)
+    if kind == "teeth":
+        draw.rounded_rectangle((690, 390, 1230, 640), radius=52, outline=cyan, width=8)
+        for x in range(745, 1190, 68):
+            draw.line((x, 420, x + 22, 610), fill=red if x in (881, 1085) else amber, width=5)
+    elif kind == "iris":
+        draw.ellipse((720, 330, 1200, 810), outline=cyan, width=9)
+        draw.ellipse((870, 480, 1050, 660), outline=red, width=8)
+        draw.arc((655, 265, 1265, 875), 18, 342, fill=amber, width=5)
+    elif kind == "finger":
+        for offset in range(0, 280, 54):
+            draw.arc((770 + offset, 430, 970 + offset, 690), 98, 274, fill=cyan, width=7)
+        draw.line((710, 760, 1220, 650), fill=red, width=6)
+    elif kind == "breath_shadow":
+        for radius in range(120, 430, 70):
+            draw.ellipse((960 - radius, 540 - radius // 2, 960 + radius, 540 + radius // 2), outline=cyan, width=5)
+        draw.polygon([(1260, 220), (1490, 940), (1180, 940)], fill=(0, 0, 0, 118))
+        draw.line((1260, 220, 1490, 940), fill=red, width=6)
+    elif kind == "footprint":
+        for x, y in [(720, 640), (910, 560), (1100, 680), (1280, 590)]:
+            draw.ellipse((x - 45, y - 88, x + 45, y + 88), outline=cyan, width=7)
+            draw.ellipse((x - 12, y - 132, x + 22, y - 102), fill=red)
+    elif kind == "environment":
+        points = [(520, 720), (760, 520), (1040, 610), (1330, 390), (1510, 560)]
+        draw.line(points, fill=cyan, width=8)
+        for x, y in points:
+            draw.ellipse((x - 22, y - 22, x + 22, y + 22), fill=amber)
+        draw.rectangle((650, 295, 1260, 770), outline=red, width=6)
+    elif kind == "room_search":
+        draw.rectangle((420, 330, 1500, 820), outline=cyan, width=8)
+        draw.line((420, 330, 1500, 820), fill=red, width=5)
+        draw.line((420, 820, 1500, 330), fill=red, width=5)
+        for x, y in [(610, 450), (930, 610), (1230, 510), (1410, 730)]:
+            draw.ellipse((x - 38, y - 38, x + 38, y + 38), outline=amber, width=6)
+    return Image.alpha_composite(image.convert("RGBA"), layer.filter(ImageFilter.GaussianBlur(0.6))).convert("RGB")
+
+
 def make_variant(source: Image.Image, spec: dict) -> Image.Image:
     image = source.copy()
     if spec.get("blur", 0):
@@ -70,6 +112,8 @@ def make_variant(source: Image.Image, spec: dict) -> Image.Image:
     if spec.get("shadow"):
         shadow = spec["shadow"]
         image = add_shadow_figure(image, int(shadow["x"]), int(shadow["y"]), float(shadow["scale"]), int(shadow["alpha"]))
+    if spec.get("inspection"):
+        image = add_inspection_marks(image, str(spec["inspection"]))
     image = vignette(image, float(spec.get("vignette", 0.74)))
     return image
 
@@ -128,6 +172,13 @@ def main() -> None:
         {"id": "cg_door_asks_someone_16x9", "role": "door_event", "trigger": "visitor_asks_someone", "source": "hallway", "tint": (58, 36, 88), "alpha": 76, "contrast": 1.28, "brightness": 0.66, "blur": 0.7, "shadow": {"x": 1020, "y": 910, "scale": 0.82, "alpha": 104}, "lights": [{"position": [700, 360], "radius": 360, "color": [180, 90, 255], "alpha": 70}]},
         {"id": "cg_door_childlike_16x9", "role": "door_event", "trigger": "visitor_childlike", "source": "hallway", "tint": (96, 46, 82), "alpha": 72, "contrast": 1.22, "brightness": 0.7, "blur": 1.0, "lights": [{"position": [1120, 660], "radius": 320, "color": [255, 120, 190], "alpha": 76}]},
         {"id": "cg_door_mistaken_chased_16x9", "role": "door_event", "trigger": "mistaken_chased", "source": "hallway", "tint": (34, 70, 82), "alpha": 68, "contrast": 1.18, "brightness": 0.68, "blur": 1.1, "shadow": {"x": 1510, "y": 930, "scale": 0.58, "alpha": 68}, "lights": [{"position": [960, 420], "radius": 380, "color": [110, 210, 255], "alpha": 58}]},
+        {"id": "cg_inspect_teeth_16x9", "role": "inspection", "trigger": "teeth", "source": "hallway", "tint": (34, 78, 76), "alpha": 64, "contrast": 1.36, "brightness": 0.68, "blur": 1.1, "inspection": "teeth", "lights": [{"position": [960, 520], "radius": 430, "color": [120, 255, 230], "alpha": 88}]},
+        {"id": "cg_inspect_iris_16x9", "role": "inspection", "trigger": "iris", "source": "hallway", "tint": (72, 38, 88), "alpha": 72, "contrast": 1.42, "brightness": 0.66, "blur": 1.2, "inspection": "iris", "lights": [{"position": [950, 540], "radius": 390, "color": [210, 100, 255], "alpha": 90}]},
+        {"id": "cg_inspect_finger_16x9", "role": "inspection", "trigger": "finger", "source": "hallway", "tint": (72, 60, 34), "alpha": 66, "contrast": 1.28, "brightness": 0.7, "blur": 0.9, "inspection": "finger", "lights": [{"position": [1030, 590], "radius": 380, "color": [255, 215, 115], "alpha": 76}]},
+        {"id": "cg_inspect_breath_shadow_16x9", "role": "inspection", "trigger": "breath_shadow", "source": "hallway", "tint": (34, 62, 92), "alpha": 76, "contrast": 1.24, "brightness": 0.64, "blur": 1.3, "inspection": "breath_shadow", "shadow": {"x": 1320, "y": 940, "scale": 0.92, "alpha": 92}},
+        {"id": "cg_inspect_footprint_16x9", "role": "inspection", "trigger": "footprint", "source": "hallway", "tint": (42, 78, 58), "alpha": 70, "contrast": 1.32, "brightness": 0.66, "blur": 0.8, "inspection": "footprint", "lights": [{"position": [1060, 720], "radius": 340, "color": [110, 255, 180], "alpha": 82}]},
+        {"id": "cg_inspect_environment_16x9", "role": "inspection", "trigger": "environment", "source": "room", "tint": (48, 72, 78), "alpha": 62, "contrast": 1.24, "brightness": 0.72, "blur": 0.6, "inspection": "environment", "lights": [{"position": [980, 430], "radius": 520, "color": [110, 235, 225], "alpha": 72}]},
+        {"id": "cg_inspect_room_search_16x9", "role": "inspection", "trigger": "room_search", "source": "room", "tint": (84, 46, 54), "alpha": 66, "contrast": 1.34, "brightness": 0.68, "blur": 0.7, "inspection": "room_search", "lights": [{"position": [960, 520], "radius": 520, "color": [255, 120, 110], "alpha": 74}]},
         {"id": "cg_ending_true_16x9", "role": "ending", "trigger": "true", "source": "hallway", "tint": (120, 170, 150), "alpha": 40, "contrast": 0.92, "brightness": 0.88, "blur": 0.4, "lights": [{"position": [960, 260], "radius": 720, "color": [215, 255, 235], "alpha": 88}]},
         {"id": "cg_ending_good_16x9", "role": "ending", "trigger": "good", "source": "room", "tint": (94, 82, 52), "alpha": 44, "contrast": 1.05, "brightness": 0.82, "blur": 0.5, "lights": [{"position": [700, 380], "radius": 480, "color": [255, 210, 150], "alpha": 72}]},
         {"id": "cg_ending_neutral_16x9", "role": "ending", "trigger": "neutral", "source": "room", "tint": (52, 66, 76), "alpha": 58, "contrast": 1.05, "brightness": 0.7, "blur": 0.8},

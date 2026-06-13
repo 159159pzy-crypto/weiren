@@ -35,6 +35,16 @@ const DOOR_EVENT_CG := {
 	"mistaken_chased": "res://assets/generated/cg_door_mistaken_chased_16x9.png",
 }
 
+const INSPECTION_CG := {
+	"teeth": "res://assets/generated/cg_inspect_teeth_16x9.png",
+	"iris": "res://assets/generated/cg_inspect_iris_16x9.png",
+	"finger": "res://assets/generated/cg_inspect_finger_16x9.png",
+	"breath_shadow": "res://assets/generated/cg_inspect_breath_shadow_16x9.png",
+	"footprint": "res://assets/generated/cg_inspect_footprint_16x9.png",
+	"environment": "res://assets/generated/cg_inspect_environment_16x9.png",
+	"room_search": "res://assets/generated/cg_inspect_room_search_16x9.png",
+}
+
 const ENDING_CG := {
 	"true": "res://assets/generated/cg_ending_true_16x9.png",
 	"good": "res://assets/generated/cg_ending_good_16x9.png",
@@ -1137,7 +1147,7 @@ func _inspect_breath_shadow() -> void:
 		_log("呼吸/影子检测未发现明确异常。")
 	else:
 		_log("检测发现：" + clue["title"])
-	_show_current_visitor()
+	_show_inspection_result("breath_shadow", "呼吸/影子检测", clue)
 
 
 func _inspect_category(category: String, cost: int, label: String) -> void:
@@ -1152,7 +1162,16 @@ func _inspect_category(category: String, cost: int, label: String) -> void:
 		_log(label + "没有发现明确异常。")
 	else:
 		_log(label + "发现：" + clue["title"])
+	_show_inspection_result(category, label, clue)
+
+
+func _show_inspection_result(category: String, label: String, clue: Dictionary) -> void:
 	_show_current_visitor()
+	_set_background(str(INSPECTION_CG.get(category, BG_PEEPHOLE)))
+	if clue.is_empty():
+		narrative.text += "\n\n[color=#8de8d0]" + label + "[/color]\n特写已经钉到线索板上，但没有足以定罪的细节。"
+	else:
+		narrative.text += "\n\n[color=#8de8d0]" + label + "[/color]\n特写确认：" + clue.get("title", "证据") + "。"
 
 
 func _show_current_visitor_with_response(response: String) -> void:
@@ -1445,6 +1464,8 @@ func _indoor_face_check() -> void:
 		state["trust"] = maxi(0, int(state["trust"]) - 3)
 		_log("牙齿和虹膜检查没有抓到异常，只让大家更疲惫。")
 	_show_investigation()
+	_set_background(str(INSPECTION_CG.get("room_search", BG_ROOM)))
+	narrative.text += "\n\n[color=#8de8d0]房间搜索特写[/color]\n床底、门缝和线索板边缘都被重新拍照归档。"
 
 
 func _indoor_trace_check() -> void:
@@ -1522,6 +1543,8 @@ func _investigate_room() -> void:
 			state["trust"] = maxi(0, int(state["trust"]) - 2)
 		_log("你重新标记了房间和线索，但没有抓到人。" + ("提前分房让足迹变得更清楚。" if bool(state.get("rooms_assigned", false)) else "未分房的人不太相信你的判断。"))
 	_show_investigation()
+	_set_background(str(INSPECTION_CG.get("room_search", BG_ROOM)))
+	narrative.text += "\n\n[color=#8de8d0]房间搜索特写[/color]\n床底、门缝和线索板边缘都被重新拍照归档。"
 
 
 func _cross_question() -> void:

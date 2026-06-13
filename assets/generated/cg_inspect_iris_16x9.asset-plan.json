@@ -1,0 +1,24 @@
+{
+  "mode": "derived-16x9-cg-variant",
+  "source": "assets/generated/bg_peephole_hallway_16x9.png",
+  "output": "assets\\generated\\cg_inspect_iris_16x9.png",
+  "size": [
+    1920,
+    1080
+  ],
+  "loras": [],
+  "vae": "checkpoint_default",
+  "input_image": null,
+  "mask_image": null,
+  "comfyui_input_image": null,
+  "comfyui_mask_image": null,
+  "workflow_safety": {
+    "controlnet_preprocessor_nodes": [],
+    "lora_policy": "no final CG LoRA; derived from audited project assets",
+    "hires_fix": "not rerun here; this adapter color-grades and composites existing 16:9 assets",
+    "vae_policy": "checkpoint_default from source generation"
+  },
+  "variant": "cg_inspect_iris_16x9",
+  "role": "inspection",
+  "trigger": "iris"
+}
