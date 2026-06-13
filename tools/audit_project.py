@@ -280,6 +280,12 @@ def audit_godot() -> list[str]:
     balance_text = balance.read_text(encoding="utf-8")
     for token in ["BALANCE_AUDIT_OK", "balance-truth", "balance-refuse", "balance-chaos", "_assert_truth_route", "_assert_refuse_route", "_assert_chaos_route"]:
         require(token in balance_text, f"BalanceAudit.gd missing {token}")
+    full_run = ROOT / "scripts/FullRunAudit.gd"
+    require(full_run.exists(), "Missing scripts/FullRunAudit.gd")
+    full_run_text = full_run.read_text(encoding="utf-8")
+    for token in ["_quarantine_available", "quarantine_capacity"]:
+        require(token in balance_text, f"BalanceAudit.gd missing quarantine capacity audit token {token}")
+        require(token in full_run_text, f"FullRunAudit.gd missing quarantine capacity audit token {token}")
     require('run/main_scene="res://scenes/Main.tscn"' in project, "Main scene is not configured")
     for token in [
         "BG_PEEPHOLE",
@@ -304,6 +310,7 @@ def audit_godot() -> list[str]:
         "_prep_assign_rooms",
         "_prep_review_records",
         "_prep_check_quarantine",
+        "quarantine_capacity",
         "_prep_set_code",
         "_prep_select_detector",
         "_prep_distribute_supplies",
@@ -376,7 +383,9 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing refusal penalty token {token}")
     for token in ["stayed_awake", "care_recovery_bonus", "高污染压低体力上限", "连续熬夜让身体发冷", "爽世照顾让黎明恢复"]:
         require(token in main, f"Main.gd missing stamina cap token {token}")
-    for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed", "self_suspicion", "day_summaries", "refusal_count", "refused_humans_streak", "stamina_cap_penalty", "stayed_awake", "care_recovery_bonus"]:
+    for token in ["今晚隔离区容量已满", "黄昏加固后当夜容量可到 2", "隔离容量"]:
+        require(token in main, f"Main.gd missing quarantine capacity token {token}")
+    for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed", "self_suspicion", "day_summaries", "refusal_count", "refused_humans_streak", "stamina_cap_penalty", "stayed_awake", "care_recovery_bonus", "quarantine_capacity"]:
         require(state_key in main, f"Main.gd missing prep state {state_key}")
     require('script = ExtResource("1_main")' in scene, "Main scene does not attach Main.gd")
     endings = re.findall(r'title = "([^"]*End[^"]*)"', main)

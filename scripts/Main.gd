@@ -490,7 +490,7 @@ func _show_title() -> void:
 
 
 func _show_help() -> void:
-	narrative.text = "[color=#9ef0dc]玩法摘要[/color]\n\n- 盘问和检查会消耗体力，过度盘问会提高伪人学习。\n- 伪人至少有三条可发现证据，但后期会适应单一规则。\n- 真人也可能表现可疑，拒绝真人会提高见死不救和身份被盗风险。\n- 隔离区是折中方案，但容量和耐久有限。\n- 第九夜会出现最终审判；保留至少三名可信人类、低污染并识别最终变身怪可达成真结局。"
+	narrative.text = "[color=#9ef0dc]玩法摘要[/color]\n\n- 盘问和检查会消耗体力，过度盘问会提高伪人学习。\n- 伪人至少有三条可发现证据，但后期会适应单一规则。\n- 真人也可能表现可疑，拒绝真人会提高见死不救和身份被盗风险。\n- 隔离区是折中方案，初始容量 1；黄昏加固后当夜容量可到 2。\n- 第九夜会出现最终审判；保留至少三名可信人类、低污染并识别最终变身怪可达成真结局。"
 	_clear_actions()
 	_add_action("返回标题", _show_title)
 
@@ -535,6 +535,7 @@ func _start_new_game() -> void:
 		"supplies": 72,
 		"door": 100,
 		"quarantine": 100,
+		"quarantine_capacity": 1,
 		"quarantine_used": 0,
 		"trust": 62,
 		"outside_danger": 16,
@@ -678,7 +679,8 @@ func _prep_fortify_quarantine() -> void:
 		return
 	state["supplies"] -= 6
 	state["quarantine"] = mini(100, state["quarantine"] + 24)
-	_log("加固隔离区，玻璃后的第二道锁重新咬合。")
+	state["quarantine_capacity"] = mini(2, int(state.get("quarantine_capacity", 1)) + 1)
+	_log("加固隔离区，玻璃后的第二道锁重新咬合。今晚容量：" + str(state.get("quarantine_capacity", 1)) + "。")
 	_begin_day()
 
 
@@ -1480,8 +1482,9 @@ func _decide_visitor(decision: String) -> void:
 			return
 		state["gun_charges"] = maxi(0, int(state.get("gun_charges", 0)) - 1)
 	if decision == "quarantine":
-		if state["quarantine_used"] >= 2:
-			_notice("今晚隔离区已经使用到极限。")
+		var usable_capacity := mini(2, int(state.get("quarantine_capacity", 1)))
+		if state["quarantine_used"] >= usable_capacity:
+			_notice("今晚隔离区容量已满。加固后最多可临时收容 2 人。")
 			return
 		if state["quarantine"] <= 0:
 			_notice("隔离区已经损坏。")
@@ -2120,7 +2123,7 @@ func _record_day_summary(food_cost: int, recovery: int) -> void:
 	var summary := "D" + str(state.get("day", "?")) + " 黎明结算："
 	summary += "\n- 屋内真人 " + str(state.get("humans_inside", 0)) + "，入侵者 " + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0)))
 	summary += "\n- 失踪 " + str(state.get("missing", 0)) + "，身份被盗 " + str(state.get("stolen", 0)) + "，可盗用外形 " + str(state.get("stolen_ids", []).size())
-	summary += "\n- 物资消耗 " + str(food_cost) + "，体力恢复 " + str(recovery) + "，下一夜外部危险 " + str(state.get("outside_danger", 0))
+	summary += "\n- 物资消耗 " + str(food_cost) + "，体力恢复 " + str(recovery) + "，下一夜外部危险 " + str(state.get("outside_danger", 0)) + "，隔离容量 " + str(state.get("quarantine_capacity", 1))
 	summary += "\n- 污染 " + str(state.get("contamination", 0)) + "，信任 " + str(state.get("trust", 0)) + "，线索可信 " + str(state.get("evidence_integrity", 0))
 	summary += "\n- 总拒绝 " + str(state.get("refusal_count", 0)) + "，连续拒绝真人 " + str(state.get("refused_humans_streak", 0)) + "，体力上限惩罚 " + str(state.get("stamina_cap_penalty", 0))
 	summary += "\n- 污染上限惩罚 " + str(_contamination_stamina_cap_penalty()) + "，彻夜未眠 " + ("是" if bool(state.get("stayed_awake", false)) else "否") + "，照顾恢复 +" + str(state.get("care_recovery_bonus", 0))
@@ -2247,6 +2250,7 @@ func _update_panels() -> void:
 	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + " / 连拒真人：" + str(state.get("refused_humans_streak", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + " / 污染惩罚：" + str(_contamination_stamina_cap_penalty()) + "\n彻夜未眠：" + ("是" if bool(state.get("stayed_awake", false)) else "否") + " / 照顾恢复：+" + str(state.get("care_recovery_bonus", 0)) + "\n"
 	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
+	status += "隔离容量：" + str(state.get("quarantine_used", 0)) + "/" + str(state.get("quarantine_capacity", 1)) + "\n"
 	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"
 	status += "物资分配：" + ("已完成" if bool(state.get("supplies_distributed", false)) else "未完成") + "\n"
 	status += "房间搜查：" + str(state.get("room_searches_left", 0)) + " / 交叉证词：" + str(state.get("cross_questions_left", 0)) + "\n"

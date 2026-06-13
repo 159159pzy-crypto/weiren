@@ -59,6 +59,7 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 - Refusal penalties now track total refusals, consecutive rejected humans, persistent stamina-cap loss from missed supplies, and outside-danger-driven chase pressure.
 - Optional LLM/free-dialogue responses now surface emotion, expression, suggested options, clue-trigger flags, and bounded trust/stress/stamina effects inside Godot while the game still owns truth and outcomes.
 - Stamina caps now account for supply shortage, missed supplies, high contamination, all-night guarding, and Soyo care recovery bonuses during dawn settlement.
+- Quarantine capacity now starts at 1 and can be raised to 2 for the night by fortifying the quarantine zone during dusk prep.
 
 ## 验证
 

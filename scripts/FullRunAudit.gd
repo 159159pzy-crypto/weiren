@@ -31,7 +31,7 @@ func _run_strategy(seed_text: String, strategy: String) -> Dictionary:
 		guard += 1
 		match scene.current_phase:
 			"prep":
-				scene._start_visitors()
+				_play_prep_strategy(strategy)
 			"door":
 				_play_door_strategy(strategy)
 			"investigation":
@@ -78,12 +78,24 @@ func _play_door_strategy(strategy: String) -> void:
 		"chaos":
 			if int(scene.current_visitor_index) % 2 == 0:
 				scene._decide_visitor("admit")
-			elif int(scene.state.get("quarantine_used", 0)) >= 2 or int(scene.state.get("quarantine", 0)) <= 0:
+			elif !_quarantine_available():
 				scene._decide_visitor("reject")
 			else:
 				scene._decide_visitor("quarantine")
 		_:
 			scene._decide_visitor("reject")
+
+
+func _play_prep_strategy(strategy: String) -> void:
+	if strategy in ["truth", "chaos"] and int(scene.state.get("quarantine_capacity", 1)) < 2 and int(scene.state.get("supplies", 0)) >= 6:
+		scene._prep_fortify_quarantine()
+	else:
+		scene._start_visitors()
+
+
+func _quarantine_available() -> bool:
+	var capacity := mini(2, int(scene.state.get("quarantine_capacity", 1)))
+	return int(scene.state.get("quarantine_used", 0)) < capacity and int(scene.state.get("quarantine", 0)) > 0
 
 
 func _reveal_all(visitor: Dictionary) -> void:
