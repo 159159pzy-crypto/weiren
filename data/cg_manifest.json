@@ -123,6 +123,33 @@
       "loras": []
     },
     {
+      "id": "cg_door_asks_someone_16x9",
+      "role": "door_event",
+      "trigger": "visitor_asks_someone",
+      "asset": "assets/generated/cg_door_asks_someone_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_childlike_16x9",
+      "role": "door_event",
+      "trigger": "visitor_childlike",
+      "asset": "assets/generated/cg_door_childlike_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_mistaken_chased_16x9",
+      "role": "door_event",
+      "trigger": "mistaken_chased",
+      "asset": "assets/generated/cg_door_mistaken_chased_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
       "id": "cg_ending_true_16x9",
       "role": "ending",
       "trigger": "true",

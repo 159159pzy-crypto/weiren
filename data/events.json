@@ -9,7 +9,10 @@
     {"id":"visitor_wrong_code","name":"暗号错误","hint":"她给出的暗号错了半句。","chased":false},
     {"id":"visitor_duplicate","name":"重复身份","hint":"屋内记录里已经有同名者。","chased":false},
     {"id":"visitor_silent","name":"沉默来访","hint":"她几乎不说话，只把手贴在门上。","chased":false},
-    {"id":"visitor_fake_radio","name":"携带情报","hint":"她带来一段广播，内容和电视雪花重叠。","chased":false}
+    {"id":"visitor_fake_radio","name":"携带情报","hint":"她带来一段广播，内容和电视雪花重叠。","chased":false},
+    {"id":"visitor_asks_someone","name":"找屋内某人","hint":"她不急着解释自己，只反复问屋内某个人是否还活着。","chased":false},
+    {"id":"visitor_childlike","name":"反常依赖","hint":"她用过分幼稚的语气撒娇，像在模仿一段亲密关系。","chased":false},
+    {"id":"mistaken_chased","name":"误以为被追","hint":"她坚称身后有东西，但走廊里暂时只有她自己的回声。","chased":false}
   ],
   "sleep_events": [
     {"id":"sleep_living_noise","name":"客厅脚步声","text":"你被客厅里来回走动的脚步吵醒。"},
@@ -23,4 +26,3 @@
     {"id":"sleep_window_tap","name":"窗户轻敲","text":"阳台窗被轻轻敲了三下，像今晚的暗号。"}
   ]
 }
-

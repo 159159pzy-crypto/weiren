@@ -121,7 +121,10 @@ def audit_data() -> list[str]:
     require(len(characters) == 10, "Expected 10 characters including final-night duplicate")
     require("taki_fake" in ids, "Missing final-night taki_fake character")
     require(sorted(row["day"] for row in day_rules) == list(range(1, 10)), "Day rules must cover days 1-9")
-    require(len(events.get("door_events", [])) >= 10, "Expected at least 10 door events")
+    door_event_ids = {event.get("id", "") for event in events.get("door_events", [])}
+    require(len(events.get("door_events", [])) >= 13, "Expected at least 13 door events")
+    for event_id in ["visitor_asks_someone", "visitor_childlike", "mistaken_chased"]:
+        require(event_id in door_event_ids, f"Missing expanded door event {event_id}")
     require(len(events.get("sleep_events", [])) >= 9, "Expected at least 9 sleep events")
     require("同人" in release_config.get("disclaimer", ""), "Release config must include fan disclaimer")
     require("LLM_API_KEY" in release_config.get("llm", {}).get("required_when_enabled", []), "Release config must document LLM_API_KEY")
@@ -138,7 +141,7 @@ def audit_data() -> list[str]:
 def audit_assets() -> list[str]:
     cg_manifest = read_json("data/cg_manifest.json")
     cg_entries = cg_manifest.get("entries", [])
-    require(len(cg_entries) >= 22, "Expected at least 22 CG manifest entries")
+    require(len(cg_entries) >= 25, "Expected at least 25 CG manifest entries")
     cg_assets = [entry["asset"] for entry in cg_entries]
     roles = {entry.get("role", "") for entry in cg_entries}
     triggers = {entry.get("trigger", "") for entry in cg_entries}
@@ -147,6 +150,8 @@ def audit_assets() -> list[str]:
         require(trigger in triggers, f"CG manifest missing sleep trigger {trigger}")
     for trigger in ["true", "good", "neutral", "no_one", "perfect_band", "purple", "identity", "door", "hidden", "distortion"]:
         require(trigger in triggers, f"CG manifest missing ending trigger {trigger}")
+    for trigger in ["visitor_asks_someone", "visitor_childlike", "mistaken_chased"]:
+        require(trigger in triggers, f"CG manifest missing expanded door trigger {trigger}")
     backgrounds = [
         "assets/generated/bg_peephole_hallway_16x9.png",
         "assets/generated/bg_safe_room_clueboard_16x9.png",
@@ -239,7 +244,7 @@ def audit_godot() -> list[str]:
         "_request_backend_dialogue",
     ]:
         require(token in main, f"Main.gd missing {token}")
-    for token in ["cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
+    for token in ["cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
         require(token in main, f"Main.gd missing CG mapping {token}")
     for stale in ["char_human_visitor_hui.png", "char_mimic_visitor_hui.png", "char_another_rikki_hui.png"]:
         require(stale not in main, f"Main.gd still references old character asset {stale}")
@@ -259,6 +264,8 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing expanded indoor investigation token {token}")
     for token in ["character_trust", "character_stress", "guarded_id", "屋内关系", "黎明关系结算"]:
         require(token in main, f"Main.gd missing relationship system token {token}")
+    for token in ["visitor_asks_someone", "visitor_childlike", "mistaken_chased", "关系矛盾", "误判追赶", "反常依赖"]:
+        require(token in main, f"Main.gd missing expanded door event token {token}")
     for token in ["正式版说明", "同人免责声明", "LLM / API Key", "发布前检查"]:
         require(token in main, f"Main.gd missing release note token {token}")
     for token in ["chase_timer", "chase_resolved", "追赶余裕", "追赶超时"]:

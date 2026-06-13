@@ -30,6 +30,9 @@ const DOOR_EVENT_CG := {
 	"visitor_chased": "res://assets/generated/cg_door_chased_16x9.png",
 	"visitor_duplicate": "res://assets/generated/cg_door_duplicate_16x9.png",
 	"visitor_supplies": "res://assets/generated/cg_door_supplies_16x9.png",
+	"visitor_asks_someone": "res://assets/generated/cg_door_asks_someone_16x9.png",
+	"visitor_childlike": "res://assets/generated/cg_door_childlike_16x9.png",
+	"mistaken_chased": "res://assets/generated/cg_door_mistaken_chased_16x9.png",
 }
 
 const ENDING_CG := {
@@ -666,8 +669,14 @@ func _generate_visitors() -> void:
 				_log("身份被盗回归预警：" + character.get("short", "") + "的外形再次出现在门外。")
 		if day >= 4 and roles[i] == "human" and rng.randf() < 0.30:
 			event = _door_event_by_id("visitor_chased")
+		if day >= 4 and roles[i] == "human" and rng.randf() < 0.18:
+			event = _door_event_by_id("mistaken_chased")
 		if day >= 5 and roles[i] != "human" and rng.randf() < 0.24:
 			event = _door_event_by_id("visitor_duplicate")
+		if day >= 5 and roles[i] != "human" and rng.randf() < 0.18:
+			event = _door_event_by_id("visitor_asks_someone")
+		if day >= 4 and roles[i] != "human" and rng.randf() < 0.16:
+			event = _door_event_by_id("visitor_childlike")
 		var visitor: Dictionary = {
 			"character": character,
 			"role": roles[i],
@@ -695,6 +704,12 @@ func _make_evidence(character: Dictionary, role: String, event: Dictionary, day:
 			evidence.append(_clue("屋内细节", "她知道房间分配，但说法和线索板上的睡位一致。", "environment", false, -1))
 		elif event.get("id", "") == "visitor_supplies":
 			evidence.append(_clue("物资来源", "包装有雨水和便利店收据，来源大致可信。", "environment", false, -1))
+		elif event.get("id", "") == "mistaken_chased":
+			evidence.append(_clue("误判追赶", "她确实害怕，但门外脚步和她的喘息节奏一致，像恐慌造成的回声。", "breath", false, -1))
+		elif event.get("id", "") == "visitor_asks_someone":
+			evidence.append(_clue("关系焦点", "她问起屋内某人的近况，细节和你们昨夜记录能对上。", "memory", false, -1))
+		elif event.get("id", "") == "visitor_childlike":
+			evidence.append(_clue("崩溃退行", "她的依赖像精神崩溃，不像在索取固定答案。", "behavior", false, -1))
 		else:
 			evidence.append(_clue("生理反应", "呼吸紊乱但有热雾，恐惧不像循环录音。", "breath", false, -1))
 		return evidence
@@ -722,6 +737,12 @@ func _make_evidence(character: Dictionary, role: String, event: Dictionary, day:
 		physical.append(_clue("知道屋内", "她说出房间细节，却把今晚分配的睡位说反了。", "environment", true, 3))
 	elif event.get("id", "") == "visitor_fake_radio":
 		physical.append(_clue("假情报", "广播里的规则停顿太整齐，像从线索板反向拼出来。", "environment", true, 2))
+	elif event.get("id", "") == "visitor_asks_someone":
+		physical.append(_clue("关系矛盾", "她不断问屋内某人，却把两人吵架后的称呼说成了公开称呼。", "memory", true, 3))
+	elif event.get("id", "") == "visitor_childlike":
+		physical.append(_clue("反常依赖", "她撒娇时情绪没有起伏，像把亲密关系读成了台词。", "behavior", true, 3))
+	elif event.get("id", "") == "mistaken_chased":
+		physical.append(_clue("假追赶", "她说身后有脚步，但猫眼里的影子只复制她自己的动作。", "shadow", true, 2))
 	if day >= 2:
 		physical.append(_clue("红虹膜", "虹膜边缘有不自然的红偏。", "iris", true, 2))
 		physical.append(_clue("指尖黑泥", "指甲缝里有不属于走廊的黑泥。", "finger", true, 2))
@@ -823,15 +844,29 @@ func _dialogue_for(visitor: Dictionary, mode: String) -> String:
 	if role == "human":
 		if event.get("id", "") == "visitor_chased":
 			return "后面有声音，我不确定是不是人。你可以怀疑我，但先让我进隔离区。"
+		if event.get("id", "") == "mistaken_chased":
+			return "我听见它一直跟着我。也许只是回声，但我没办法一个人在走廊里确认。"
 		if event.get("id", "") == "visitor_supplies":
 			return "我带了吃的和药。你可以先检查袋子，别直接碰我的手。"
+		if event.get("id", "") == "visitor_asks_someone":
+			return "先告诉我，屋里那个名字还在吗？如果她还活着，我再回答你的问题。"
+		if event.get("id", "") == "visitor_childlike":
+			return "我真的撑不住了。你可以骂我，但不要用那种记录员的眼神看我。"
 		if mode == "deep":
 			return character.get("memory", "我记得那天的事。") + " 这种细节，伪装不出来吧？"
 		return "我知道你必须怀疑。那就问，问到你觉得够为止。"
 	if role == "mimic":
+		if event.get("id", "") == "visitor_asks_someone":
+			return "先让那个人出来。我只要确认她还会叫我的名字。"
+		if event.get("id", "") == "visitor_childlike":
+			return "立希……你不会真的把我关在外面吧？你以前不会这样。"
 		if mode == "deep":
 			return "证明……证明你要的证明。我可以学会你想听的每一种回答。"
 		return "我是" + short + "。你一直都认识我。现在开门，别让外面继续看着我们。"
+	if event.get("id", "") == "visitor_asks_someone":
+		return "别问我，叫屋里那个人来。她知道我是谁。"
+	if event.get("id", "") == "visitor_childlike":
+		return "开门嘛。你看，我都这样求你了，还不够像吗？"
 	if mode == "deep":
 		return "你刚才问的是暗号，暗号就是……等一下，你最后说的那个词是什么？"
 	return "别浪费时间。你越问，门外的东西越近。"
@@ -1214,6 +1249,9 @@ func _apply_admit(visitor: Dictionary, clue_score: int) -> void:
 		if visitor["event"].get("id", "") == "visitor_supplies":
 			state["supplies"] = mini(100, state["supplies"] + 18)
 			_adjust_character_relation(character, 3, -4, "物资被确认")
+		if visitor["event"].get("id", "") == "mistaken_chased":
+			state["trust"] = mini(100, int(state["trust"]) + 2)
+			_adjust_character_relation(character, 4, -10, "误判追赶被安抚")
 		if visitor["event"].get("chased", false):
 			state["outside_danger"] = mini(100, int(state["outside_danger"]) + 5)
 			state["door"] = maxi(0, int(state["door"]) - 4)
@@ -1225,6 +1263,10 @@ func _apply_admit(visitor: Dictionary, clue_score: int) -> void:
 		state["contamination"] = mini(100, state["contamination"] + 12)
 		state["trust"] = maxi(0, state["trust"] - 9)
 		_adjust_character_relation(character, -8, 10, "同名伪人入屋")
+		if visitor["event"].get("id", "") == "visitor_asks_someone":
+			_stress_inside_target("被门外关系诱导", 10)
+		elif visitor["event"].get("id", "") == "visitor_childlike":
+			state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 4)
 		_log("你放入了伪装成" + character.get("short", "") + "的伪人。屋内空气变冷。")
 	else:
 		state["mimics_inside"] += 1
@@ -1245,6 +1287,9 @@ func _apply_quarantine(visitor: Dictionary, clue_score: int) -> void:
 		_record_inside_human(character)
 		state["trust"] = mini(100, state["trust"] + (4 if visitor["event"].get("chased", false) else 1))
 		_adjust_character_relation(character, 5, 6 if visitor["event"].get("chased", false) else 10, "被隔离收容")
+		if visitor["event"].get("id", "") == "mistaken_chased":
+			state["trust"] = mini(100, int(state["trust"]) + 3)
+			_adjust_character_relation(character, 3, -8, "隔离区安抚误判追赶")
 		var wear := rng.randi_range(8, 14) if visitor["event"].get("chased", false) else rng.randi_range(4, 10)
 		state["quarantine"] = maxi(0, state["quarantine"] - wear)
 		if visitor["event"].get("chased", false):
@@ -1282,6 +1327,10 @@ func _apply_reject(visitor: Dictionary, clue_score: int) -> void:
 		if visitor["event"].get("id", "") == "visitor_supplies":
 			state["supplies"] = maxi(0, int(state["supplies"]) - 8)
 			_log("拒绝携带物资的真人，明天的补给缺口更明显。")
+		if visitor["event"].get("id", "") == "mistaken_chased":
+			state["trust"] = maxi(0, int(state["trust"]) - 5)
+			state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 4)
+			_log("你拒绝了误以为被追的真人。屋内开始怀疑你是否还分得清恐惧和伪装。")
 		if rng.randi_range(1, 100) <= 45 + int(state["outside_danger"]):
 			state["stolen"] += 1
 			_record_missing_identity(character, true)
@@ -1292,6 +1341,10 @@ func _apply_reject(visitor: Dictionary, clue_score: int) -> void:
 		state["outside_danger"] = mini(100, state["outside_danger"] + 2)
 		state["trust"] = mini(100, state["trust"] + 2)
 		_adjust_character_relation(character, 2, -2, "同名伪人被挡在门外")
+		if visitor["event"].get("id", "") == "visitor_asks_someone":
+			state["evidence_integrity"] = mini(100, int(state["evidence_integrity"]) + 3)
+		elif visitor["event"].get("id", "") == "visitor_childlike":
+			state["trust"] = maxi(0, int(state["trust"]) - 1)
 		_log("伪人被留在门外。门板另一侧传来很轻的笑声。")
 	else:
 		state["outside_danger"] = mini(100, state["outside_danger"] + 5)
@@ -1999,6 +2052,16 @@ func _most_stressed_inside_id() -> String:
 			worst_stress = stress
 			worst_id = str(id)
 	return worst_id
+
+
+func _stress_inside_target(reason: String, amount: int) -> void:
+	var target_id := _most_stressed_inside_id()
+	if target_id.is_empty():
+		state["trust"] = maxi(0, int(state["trust"]) - 2)
+		return
+	var target := _character_by_id(target_id)
+	_adjust_character_relation(target, -3, amount, reason)
+	_log(target.get("short", "某人") + "被卷入门外关系冲突，压力上升。")
 
 
 func _relationship_summary() -> String:
