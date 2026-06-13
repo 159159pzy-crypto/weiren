@@ -44,6 +44,7 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 
 - `assets/generated/bg_peephole_hallway_16x9.png`
 - `assets/generated/bg_safe_room_clueboard_16x9.png`
+- `tools/make_environment_variants.py` derives 8 audited 16:9 environment backgrounds for title, prep, investigation, quarantine, sleep, dawn, contamination, and final judgment scenes.
 - `assets/generated/char_human_base.png`
 - `assets/generated/char_fake_base.png`
 - `assets/generated/char_mimic_base.png`

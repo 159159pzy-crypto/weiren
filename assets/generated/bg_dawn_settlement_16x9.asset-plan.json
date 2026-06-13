@@ -1,0 +1,25 @@
+{
+  "mode": "derived-16x9-environment-background",
+  "source": "assets/generated/bg_peephole_hallway_16x9.png",
+  "output": "assets\\generated\\bg_dawn_settlement_16x9.png",
+  "size": [
+    1920,
+    1080
+  ],
+  "role": "environment_background",
+  "variant": "bg_dawn_settlement_16x9",
+  "loras": [],
+  "vae": "checkpoint_default",
+  "input_image": null,
+  "mask_image": null,
+  "comfyui_input_image": null,
+  "comfyui_mask_image": null,
+  "workflow_safety": {
+    "active_loras": [],
+    "controlnet_preprocessor_nodes": [],
+    "suspicious_preprocessor_nodes": [],
+    "lora_policy": "no final environment LoRA; derived from audited background",
+    "hires_fix": "not rerun here; color-grade and overlay variant from audited 16:9 background",
+    "vae_policy": "checkpoint_default from source generation"
+  }
+}

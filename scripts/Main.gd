@@ -14,6 +14,17 @@ const CHAR_MIMIC := "res://assets/generated/char_mimic_base.png"
 const CHAR_RIKKI := "res://assets/generated/char_rikki_base.png"
 const BACKEND_DIALOGUE_URL := "http://127.0.0.1:8787/v1/dialogue"
 
+const ENVIRONMENT_BG := {
+	"title": "res://assets/generated/bg_title_night_16x9.png",
+	"prep": "res://assets/generated/bg_prep_clueboard_16x9.png",
+	"investigation": "res://assets/generated/bg_investigation_room_16x9.png",
+	"quarantine": "res://assets/generated/bg_quarantine_glass_16x9.png",
+	"sleep": "res://assets/generated/bg_sleep_locked_room_16x9.png",
+	"dawn": "res://assets/generated/bg_dawn_settlement_16x9.png",
+	"contamination": "res://assets/generated/bg_contamination_room_16x9.png",
+	"final_judgment": "res://assets/generated/bg_final_judgment_16x9.png",
+}
+
 const CHARACTER_VARIANTS := {
 	"human": {
 		"base": CHAR_HUMAN,
@@ -353,7 +364,7 @@ func _setup_http() -> void:
 
 func _show_title() -> void:
 	current_phase = "title"
-	_set_background(BG_PEEPHOLE)
+	_set_background(str(ENVIRONMENT_BG.get("title", BG_PEEPHOLE)))
 	_hide_character_portrait()
 	title_label.text = "猫眼之后"
 	subtitle_label.text = "你不能相信所有人。但如果你谁都不信，你也会失去所有人。"
@@ -471,7 +482,7 @@ func _begin_day() -> void:
 		_apply_rule_distortion_pressure()
 		_refresh_gun_charges()
 		_generate_visitors()
-	_set_background(BG_ROOM)
+	_set_background(str(ENVIRONMENT_BG.get("prep", BG_ROOM)))
 	var rule := _rule_for_day(state["day"])
 	title_label.text = "第 " + str(state["day"]) + " 夜"
 	subtitle_label.text = rule.get("rule", "")
@@ -1446,7 +1457,7 @@ func _apply_gun(visitor: Dictionary, clue_score: int) -> void:
 
 func _show_investigation() -> void:
 	current_phase = "investigation"
-	_set_background(BG_ROOM)
+	_set_background(_investigation_background())
 	_hide_character_portrait()
 	title_label.text = "第 " + str(state["day"]) + " 夜 / 室内排查"
 	subtitle_label.text = "门外来访结束，真正危险可能已经进屋。"
@@ -1465,6 +1476,16 @@ func _show_investigation() -> void:
 	_add_action("请爽世照顾伤员（物资 6）", _soyo_care)
 	_add_action("熬夜守到天亮（体力 35）", _guard_until_dawn)
 	_add_action("睡觉", _start_sleep)
+
+
+func _investigation_background() -> String:
+	if int(state.get("day", 1)) >= 9 or int(state.get("rule_distortion", 0)) >= 50 or int(state.get("final_judgment", 0)) >= 55:
+		return str(ENVIRONMENT_BG.get("final_judgment", BG_ROOM))
+	if int(state.get("contamination", 0)) >= 60:
+		return str(ENVIRONMENT_BG.get("contamination", BG_ROOM))
+	if int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0)) > 0:
+		return str(ENVIRONMENT_BG.get("quarantine", BG_ROOM))
+	return str(ENVIRONMENT_BG.get("investigation", BG_ROOM))
 
 
 func _indoor_free_talk() -> void:
@@ -1662,6 +1683,7 @@ func _guard_until_dawn() -> void:
 
 func _start_sleep() -> void:
 	current_phase = "sleep"
+	_set_background(str(ENVIRONMENT_BG.get("sleep", BG_ROOM)))
 	var rule := _rule_for_day(state["day"])
 	var count := rng.randi_range(int(rule["sleep_min"]), int(rule["sleep_max"]))
 	if state["guarded"]:
@@ -1806,7 +1828,7 @@ func _apply_relationship_pressure() -> void:
 
 func _dawn_settlement(_events: Array) -> void:
 	current_phase = "dawn"
-	_set_background(BG_ROOM)
+	_set_background(str(ENVIRONMENT_BG.get("dawn", BG_ROOM)))
 	_hide_character_portrait()
 	var fake_pressure := int(state["fakes_inside"]) * rng.randi_range(7, 14) + int(state["mimics_inside"]) * rng.randi_range(12, 22)
 	if bool(state.get("rooms_assigned", false)):

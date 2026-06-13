@@ -47,6 +47,8 @@ Final in-game backgrounds:
 | Safe-room clue board | `bg_safe_room_clueboard_16x9.png` |
 | Final CG | `cg_another_rikki_hui_16x9.png` |
 
+`tools/make_environment_variants.py` derives 8 additional audited 16:9 environment backgrounds from the two base backgrounds for title, prep, investigation, quarantine, sleep, dawn, contamination, and final-judgment phases. These sidecars keep empty `loras`, no input/mask references, and checkpoint-default VAE policy.
+
 The final CG is adapted from `another_rikki_final.png`, whose sidecar has no LoRA entries. Older Hui character/background test images and LoRA-bearing background drafts were removed from `assets/generated` so they cannot be mistaken for shipping assets.
 
 ## CG Route
