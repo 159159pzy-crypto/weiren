@@ -204,6 +204,8 @@ def audit_godot() -> list[str]:
         "_indoor_face_check",
         "_indoor_trace_check",
         "_indoor_breath_shadow_check",
+        "_investigate_room",
+        "_cross_question",
         "_advance_chase",
         "_resolve_chase_timeout",
         "_ask_free_question",
@@ -223,8 +225,10 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing final-night distortion token {token}")
     for label in ["从门缝观察", "拿手电筒查看", "锁门继续睡"]:
         require(label in main, f"Main.gd missing sleep action {label}")
-    for label in ["室内自由对话", "共同记忆盘问", "屋内牙齿/虹膜检查", "屋内指泥/足迹检测", "屋内呼吸/影子观察"]:
+    for label in ["室内自由对话", "共同记忆盘问", "屋内牙齿/虹膜检查", "屋内指泥/足迹检测", "屋内呼吸/影子观察", "搜查房间", "交叉质问屋内成员"]:
         require(label in main, f"Main.gd missing indoor investigation action {label}")
+    for token in ["room_searches_left", "cross_questions_left", "交叉证词", "线索污染"]:
+        require(token in main, f"Main.gd missing expanded indoor investigation token {token}")
     for token in ["chase_timer", "chase_resolved", "追赶余裕", "追赶超时"]:
         require(token in main, f"Main.gd missing chase event token {token}")
     for token in ["missing_ids", "stolen_ids", "inside_human_ids", "身份被盗回归预警", "可盗用外形"]:

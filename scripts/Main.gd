@@ -337,6 +337,8 @@ func _start_new_game() -> void:
 		"rooms_assigned": false,
 		"supplies_distributed": false,
 		"room_search_bonus": 0,
+		"room_searches_left": 0,
+		"cross_questions_left": 0,
 		"log": [],
 		"evidence": []
 	}
@@ -355,6 +357,8 @@ func _begin_day() -> void:
 	state["rooms_assigned"] = false
 	state["supplies_distributed"] = false
 	state["room_search_bonus"] = 0
+	state["room_searches_left"] = 1 + (1 if int(state["day"]) >= 5 else 0)
+	state["cross_questions_left"] = 1 + (1 if int(state["day"]) >= 6 else 0)
 	_apply_self_suspicion_pressure()
 	_apply_rule_distortion_pressure()
 	_refresh_gun_charges()
@@ -412,6 +416,7 @@ func _prep_assign_rooms() -> void:
 	if !_spend_stamina(5):
 		return
 	state["rooms_assigned"] = true
+	state["room_searches_left"] = int(state.get("room_searches_left", 0)) + 1
 	state["trust"] = mini(100, state["trust"] + 3)
 	state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 5)
 	_log("重新分配房间：每个人的睡位、门缝和逃生路线都被写到线索板上。")
@@ -1349,30 +1354,66 @@ func _resolve_indoor_threat(kind: String, base_chance: int) -> bool:
 
 
 func _investigate_room() -> void:
+	if int(state.get("room_searches_left", 0)) <= 0:
+		_notice("今晚能搜的房间都已经翻过了。再搜只会把线索弄乱。")
+		return
 	if !_spend_stamina(6):
 		return
-	state["room_search_bonus"] = 1
-	if state["fakes_inside"] > 0 and rng.randi_range(1, 100) <= 60 + int(state["evidence_integrity"]) / 4:
+	state["room_searches_left"] = maxi(0, int(state.get("room_searches_left", 0)) - 1)
+	state["room_search_bonus"] = mini(2, int(state.get("room_search_bonus", 0)) + 1)
+	var chance := 50 + int(state["evidence_integrity"]) / 4
+	if bool(state.get("rooms_assigned", false)):
+		chance += 14
+	if int(state["day"]) >= 6:
+		chance -= int(state.get("mimic_learning", 0)) / 8
+	chance = clampi(chance, 15, 92)
+	if state["fakes_inside"] > 0 and rng.randi_range(1, 100) <= chance:
 		state["fakes_inside"] -= 1
 		state["contamination"] = maxi(0, state["contamination"] - 6)
+		state["evidence_integrity"] = mini(100, int(state["evidence_integrity"]) + 6)
 		_log("房间搜查发现伪人的藏身痕迹，并把它逼回门外。")
+	elif int(state["mimics_inside"]) > 0 and rng.randi_range(1, 100) <= chance - 12:
+		state["mimics_inside"] = maxi(0, int(state["mimics_inside"]) - 1)
+		state["quarantine"] = maxi(0, int(state["quarantine"]) - 14)
+		state["evidence_integrity"] = mini(100, int(state["evidence_integrity"]) + 5)
+		_log("房间搜查把一个变身怪的藏身路线逼出来，隔离区又多了一道裂痕。")
 	else:
-		state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 6)
-		_log("你重新标记了房间和线索，但没有抓到人。")
+		var integrity_gain := 8 if bool(state.get("rooms_assigned", false)) else 4
+		state["evidence_integrity"] = mini(100, state["evidence_integrity"] + integrity_gain)
+		if !bool(state.get("rooms_assigned", false)) and int(state["humans_inside"]) > 0:
+			state["trust"] = maxi(0, int(state["trust"]) - 2)
+		_log("你重新标记了房间和线索，但没有抓到人。" + ("提前分房让足迹变得更清楚。" if bool(state.get("rooms_assigned", false)) else "未分房的人不太相信你的判断。"))
 	_show_investigation()
 
 
 func _cross_question() -> void:
+	if int(state.get("cross_questions_left", 0)) <= 0:
+		_notice("今晚的交叉证词已经被问到疲劳。再追问只会让大家互相怀疑。")
+		return
 	if !_spend_stamina(4):
 		return
-	if state["mimics_inside"] > 0 and rng.randi_range(1, 100) <= 45:
+	state["cross_questions_left"] = maxi(0, int(state.get("cross_questions_left", 0)) - 1)
+	var chance := 38 + int(state["trust"]) / 6 + int(state["evidence_integrity"]) / 8
+	if bool(state.get("rooms_assigned", false)):
+		chance += 8
+	if int(state["day"]) >= 7:
+		chance -= int(state.get("mimic_learning", 0)) / 10
+	chance = clampi(chance, 12, 88)
+	if state["mimics_inside"] > 0 and rng.randi_range(1, 100) <= chance:
 		state["mimics_inside"] -= 1
 		state["quarantine"] = maxi(0, state["quarantine"] - 18)
+		state["evidence_integrity"] = mini(100, int(state["evidence_integrity"]) + 8)
 		_log("交叉质问逼出一个变身怪。它撞碎隔离门内侧玻璃。")
+	elif state["fakes_inside"] > 0 and rng.randi_range(1, 100) <= chance - 10:
+		state["fakes_inside"] -= 1
+		state["contamination"] = maxi(0, int(state["contamination"]) - 5)
+		state["trust"] = mini(100, int(state["trust"]) + 3)
+		_log("交叉证词把一段路线矛盾对上了，伪人只能放弃这个名字。")
 	else:
-		state["mimic_learning"] = mini(100, state["mimic_learning"] + 5)
-		state["trust"] = maxi(0, state["trust"] - 3)
-		_log("交叉质问让大家更紧张，伪人也学到更多回答。")
+		var learning_gain := 7 if int(state["evidence_integrity"]) < 45 else 4
+		state["mimic_learning"] = mini(100, state["mimic_learning"] + learning_gain)
+		state["trust"] = maxi(0, state["trust"] - (5 if int(state["evidence_integrity"]) < 45 else 3))
+		_log("交叉质问没有结论。" + ("线索污染太重，伪人反而学到了更多答案。" if int(state["evidence_integrity"]) < 45 else "大家更紧张，伪人也学到更多回答。"))
 	_show_investigation()
 
 
@@ -1694,6 +1735,7 @@ func _update_panels() -> void:
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
 	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"
 	status += "物资分配：" + ("已完成" if bool(state.get("supplies_distributed", false)) else "未完成") + "\n"
+	status += "房间搜查：" + str(state.get("room_searches_left", 0)) + " / 交叉证词：" + str(state.get("cross_questions_left", 0)) + "\n"
 	stats_label.text = status
 	var board := "[color=#ffc878]最近记录[/color]\n" + _recent_lines(state["log"], 10)
 	board += "\n\n[color=#9ef0dc]证据[/color]\n" + _recent_lines(state["evidence"], 12)
