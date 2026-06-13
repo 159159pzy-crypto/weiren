@@ -101,5 +101,14 @@
     "filename": "codex_another-rikki-final_00001_.png",
     "subfolder": "",
     "type": "output"
+  },
+  "vae": "checkpoint_default",
+  "workflow_safety": {
+    "active_loras": [],
+    "controlnet_preprocessor_nodes": [],
+    "suspicious_preprocessor_nodes": [],
+    "lora_policy": "no final game LoRA; prompt-only SDXL txt2img source asset",
+    "hires_fix": "first-pass denoise may be 1.0; audited hires parameters are hires_scale, hires_steps, and hires_denoise",
+    "vae_policy": "checkpoint_default"
   }
 }

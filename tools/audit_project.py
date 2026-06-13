@@ -88,6 +88,7 @@ def assert_vae_sane(path: str) -> None:
 
 def assert_workflow_safety_sane(path: str) -> None:
     sidecar = sidecar_json_for_asset(path)
+    require("workflow_safety" in sidecar, f"{path} sidecar missing workflow_safety audit summary")
     workflow_safety = sidecar.get("workflow_safety", {})
     require(isinstance(workflow_safety, dict), f"{path} workflow_safety must be an object when present")
     active_loras = workflow_safety.get("active_loras", [])
@@ -99,7 +100,8 @@ def assert_workflow_safety_sane(path: str) -> None:
     vae_policy = str(workflow_safety.get("vae_policy", sidecar.get("vae", "checkpoint_default"))).lower()
     require(vae_policy in {"", "checkpoint_default", "embedded", "model_default", "checkpoint_default from source generation"}, f"{path} workflow_safety has unexpected VAE policy: {vae_policy}")
 
-    # Derived CGs do not rerun Hires Fix; source txt2img assets must keep direct numeric params sane.
+    # A first-pass txt2img sampler commonly uses denoise=1.0. Only Hires Fix
+    # fields are treated as the high-risk second-pass parameters here.
     hires_note = str(workflow_safety.get("hires_fix", "")).lower()
     if "not rerun" in hires_note:
         return
@@ -258,7 +260,7 @@ def audit_assets() -> list[str]:
     require(icon_script.exists(), "Missing tools/make_ui_icons.py")
     for path in ui_icons:
         require(image_size(path) == (128, 128), f"{path} must be 128x128")
-    return ["backgrounds=2@16:9", f"environment_bg={len(environment_backgrounds)}@16:9", f"effects={len(effect_overlays)}@16:9", f"ui_icons={len(ui_icons)}", f"characters={len(characters)}@no-lora", f"cg={len(cgs)}@no-lora-16:9", "door_event_cg=13", "inspection_cg=7", "preprocessor_leaks=none", "vae=checkpoint_default"]
+    return ["backgrounds=2@16:9", f"environment_bg={len(environment_backgrounds)}@16:9", f"effects={len(effect_overlays)}@16:9", f"ui_icons={len(ui_icons)}", f"characters={len(characters)}@no-lora", f"cg={len(cgs)}@no-lora-16:9", "door_event_cg=13", "inspection_cg=7", "preprocessor_leaks=none", "lora_weights=safe", "hires_fix=safe", "vae=checkpoint_default", "workflow_safety=required"]
 
 
 def audit_godot() -> list[str]:
