@@ -515,6 +515,8 @@ func _generate_visitors() -> void:
 			"evidence": _make_evidence(character, roles[i], event, day),
 			"discovered": [],
 			"asked": 0,
+			"chase_timer": rng.randi_range(3, 5) if bool(event.get("chased", false)) else -1,
+			"chase_resolved": false,
 			"stress": rng.randi_range(35, 85),
 			"decided": false
 		}
@@ -599,6 +601,8 @@ func _show_current_visitor() -> void:
 	subtitle_label.text = character.get("name", "") + " / " + event.get("name", "")
 	event_label.text = "[color=#ffc878]" + event.get("name", "") + "[/color]\n" + event.get("hint", "")
 	var intro := _visitor_intro(visitor)
+	if bool(event.get("chased", false)) and int(visitor.get("chase_timer", -1)) >= 0:
+		intro += "\n\n[color=#ff8f8f]追赶余裕：" + str(visitor.get("chase_timer", 0)) + "。每次盘问或检查都会让门外脚步更近。[/color]"
 	narrative.text = intro + "\n\n[color=#9ef0dc]已发现线索：" + str(visitor["discovered"].size()) + "/" + str(visitor["evidence"].size()) + "[/color]\n" + _visitor_clue_text(visitor)
 	_update_panels()
 	_clear_actions()
@@ -682,6 +686,38 @@ func _visitor_clue_text(visitor: Dictionary) -> String:
 	return "\n" + "\n".join(lines)
 
 
+func _advance_chase(visitor: Dictionary, amount: int, reason: String) -> bool:
+	if !bool(visitor.get("event", {}).get("chased", false)) or bool(visitor.get("chase_resolved", false)):
+		return false
+	visitor["chase_timer"] = int(visitor.get("chase_timer", 0)) - amount
+	if int(visitor["chase_timer"]) > 0:
+		_log("追赶事件拖延：" + reason + "。门外脚步更近，余裕 " + str(visitor["chase_timer"]) + "。")
+		return false
+	_resolve_chase_timeout(visitor)
+	return true
+
+
+func _resolve_chase_timeout(visitor: Dictionary) -> void:
+	var character: Dictionary = visitor["character"]
+	visitor["chase_resolved"] = true
+	visitor["decided"] = true
+	if visitor["role"] == "human":
+		state["missing"] += 1
+		state["stolen"] += 1
+		state["abandonment"] = mini(10, int(state["abandonment"]) + 2)
+		state["trust"] = maxi(0, int(state["trust"]) - 10)
+		state["outside_danger"] = mini(100, int(state["outside_danger"]) + 8)
+		_log("追赶超时：真正的" + character.get("short", "她") + "在猫眼外失踪，身份进入可盗用池。")
+	else:
+		state["outside_danger"] = mini(100, int(state["outside_danger"]) + 6)
+		state["mimic_learning"] = mini(100, int(state["mimic_learning"]) + 5)
+		_log("追赶超时：门外的脚步声停了。假求救者不再演逃亡，开始记你的拖延习惯。")
+	current_visitor_index += 1
+	_check_immediate_failure()
+	if current_phase != "ending":
+		_show_current_visitor()
+
+
 func _ask_free_question() -> void:
 	if question_input == null:
 		return
@@ -693,6 +729,8 @@ func _ask_free_question() -> void:
 		return
 	var visitor: Dictionary = current_visitors[current_visitor_index]
 	visitor["asked"] += 1
+	if _advance_chase(visitor, 1, "自由盘问"):
+		return
 	if visitor["role"] == "mimic":
 		state["mimic_learning"] = mini(100, state["mimic_learning"] + 3)
 	elif visitor["role"] == "fake":
@@ -820,6 +858,8 @@ func _ask_basic() -> void:
 		return
 	var visitor: Dictionary = current_visitors[current_visitor_index]
 	visitor["asked"] += 1
+	if _advance_chase(visitor, 1, "普通盘问"):
+		return
 	var clue := _reveal_next_clue(visitor, ["memory", "behavior"], 55)
 	var response := _dialogue_for(visitor, "basic")
 	if clue.is_empty():
@@ -834,6 +874,8 @@ func _ask_deep() -> void:
 		return
 	var visitor: Dictionary = current_visitors[current_visitor_index]
 	visitor["asked"] += 2
+	if _advance_chase(visitor, 2, "深度盘问"):
+		return
 	state["mimic_learning"] = mini(100, state["mimic_learning"] + (4 if visitor["role"] == "mimic" else 1))
 	var clue := _reveal_next_clue(visitor, ["memory", "behavior", "environment", "breath", "shadow", "finger", "teeth", "iris", "footprint"], 85)
 	var response := _dialogue_for(visitor, "deep")
@@ -888,6 +930,8 @@ func _inspect_breath_shadow() -> void:
 	if !_spend_stamina(cost):
 		return
 	var visitor: Dictionary = current_visitors[current_visitor_index]
+	if _advance_chase(visitor, 1, "呼吸/影子检测"):
+		return
 	var clue := _reveal_next_clue(visitor, ["breath", "shadow"], _inspection_chance("breath_shadow", 90))
 	if clue.is_empty():
 		_log("呼吸/影子检测未发现明确异常。")
@@ -901,6 +945,8 @@ func _inspect_category(category: String, cost: int, label: String) -> void:
 	if !_spend_stamina(actual_cost):
 		return
 	var visitor: Dictionary = current_visitors[current_visitor_index]
+	if _advance_chase(visitor, 1, label):
+		return
 	var clue := _reveal_next_clue(visitor, [category], _inspection_chance(category, 92))
 	if clue.is_empty():
 		_log(label + "没有发现明确异常。")
@@ -947,6 +993,7 @@ func _decide_visitor(decision: String) -> void:
 	var character: Dictionary = visitor["character"]
 	var role: String = visitor["role"]
 	var clue_score := _clue_score(visitor)
+	visitor["chase_resolved"] = true
 	if decision == "gun":
 		if !_spend_stamina(15):
 			return
@@ -992,6 +1039,11 @@ func _apply_admit(visitor: Dictionary, clue_score: int) -> void:
 		state["trust"] = mini(100, state["trust"] + 4)
 		if visitor["event"].get("id", "") == "visitor_supplies":
 			state["supplies"] = mini(100, state["supplies"] + 18)
+		if visitor["event"].get("chased", false):
+			state["outside_danger"] = mini(100, int(state["outside_danger"]) + 5)
+			state["door"] = maxi(0, int(state["door"]) - 4)
+			_log(character.get("short", "") + "被直接放入屋内。她是真的，但追赶她的东西也记住了门的位置。")
+			return
 		_log(character.get("short", "") + "被放入屋内。她是真的，但屋内也因此更拥挤。")
 	elif role == "fake":
 		state["fakes_inside"] += 1
@@ -1013,11 +1065,16 @@ func _apply_quarantine(visitor: Dictionary, clue_score: int) -> void:
 	state["refusal_streak"] = 0
 	if role == "human":
 		state["humans_inside"] += 1
-		state["trust"] = mini(100, state["trust"] + 1)
-		state["quarantine"] = maxi(0, state["quarantine"] - rng.randi_range(4, 10))
-		_log(character.get("short", "") + "进入隔离区。她活下来了，但被玻璃隔开。")
+		state["trust"] = mini(100, state["trust"] + (4 if visitor["event"].get("chased", false) else 1))
+		var wear := rng.randi_range(8, 14) if visitor["event"].get("chased", false) else rng.randi_range(4, 10)
+		state["quarantine"] = maxi(0, state["quarantine"] - wear)
+		if visitor["event"].get("chased", false):
+			_log(character.get("short", "") + "被拉进隔离区。追赶者撞上外层玻璃，安全但代价很响。")
+		else:
+			_log(character.get("short", "") + "进入隔离区。她活下来了，但被玻璃隔开。")
 	elif role == "fake":
-		state["quarantine"] = maxi(0, state["quarantine"] - rng.randi_range(16, 34))
+		var fake_wear := rng.randi_range(24, 42) if visitor["event"].get("chased", false) else rng.randi_range(16, 34)
+		state["quarantine"] = maxi(0, state["quarantine"] - fake_wear)
 		if clue_score >= 3:
 			_log("伪人被关进隔离区，冲击后暴露形态。")
 		else:

@@ -140,6 +140,8 @@ def audit_godot() -> list[str]:
         "_indoor_face_check",
         "_indoor_trace_check",
         "_indoor_breath_shadow_check",
+        "_advance_chase",
+        "_resolve_chase_timeout",
         "_ask_free_question",
         "_judge_final_ending",
         "_request_backend_dialogue",
@@ -153,6 +155,8 @@ def audit_godot() -> list[str]:
         require(label in main, f"Main.gd missing sleep action {label}")
     for label in ["室内自由对话", "共同记忆盘问", "屋内牙齿/虹膜检查", "屋内指泥/足迹检测", "屋内呼吸/影子观察"]:
         require(label in main, f"Main.gd missing indoor investigation action {label}")
+    for token in ["chase_timer", "chase_resolved", "追赶余裕", "追赶超时"]:
+        require(token in main, f"Main.gd missing chase event token {token}")
     for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed"]:
         require(state_key in main, f"Main.gd missing prep state {state_key}")
     require('script = ExtResource("1_main")' in scene, "Main scene does not attach Main.gd")
