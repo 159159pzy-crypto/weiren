@@ -538,6 +538,7 @@ func _start_new_game() -> void:
 		"quarantine_capacity": 1,
 		"quarantine_used": 0,
 		"trust": 62,
+		"low_trust_incidents": 0,
 		"outside_danger": 16,
 		"evidence_integrity": 100,
 		"mimic_learning": 0,
@@ -1395,6 +1396,8 @@ func _inspect_breath_shadow() -> void:
 	if !_spend_stamina(cost):
 		return
 	var visitor: Dictionary = current_visitors[current_visitor_index]
+	if _low_trust_inspection_resistance(visitor, "呼吸/影子检测"):
+		return
 	if _advance_chase(visitor, 1, "呼吸/影子检测"):
 		return
 	var clue := _reveal_next_clue(visitor, ["breath", "shadow"], _inspection_chance("breath_shadow", 90))
@@ -1410,6 +1413,8 @@ func _inspect_category(category: String, cost: int, label: String) -> void:
 	if !_spend_stamina(actual_cost):
 		return
 	var visitor: Dictionary = current_visitors[current_visitor_index]
+	if _low_trust_inspection_resistance(visitor, label):
+		return
 	if _advance_chase(visitor, 1, label):
 		return
 	var clue := _reveal_next_clue(visitor, [category], _inspection_chance(category, 92))
@@ -1418,6 +1423,21 @@ func _inspect_category(category: String, cost: int, label: String) -> void:
 	else:
 		_log(label + "发现：" + clue["title"])
 	_show_inspection_result(category, label, clue)
+
+
+func _low_trust_inspection_resistance(visitor: Dictionary, label: String) -> bool:
+	if visitor.get("role", "") != "human" or int(state.get("trust", 100)) >= 25:
+		return false
+	if rng.randi_range(1, 100) > 35:
+		return false
+	visitor["stress"] = clampi(int(visitor.get("stress", 50)) + 12, 0, 100)
+	state["evidence_integrity"] = maxi(0, int(state.get("evidence_integrity", 0)) - 3)
+	state["low_trust_incidents"] = int(state.get("low_trust_incidents", 0)) + 1
+	_log("信任过低，真人拒绝检查：" + label + "无法完成。")
+	_show_current_visitor()
+	narrative.text += "\n\n[color=#ff8f8f]她后退半步：[/color]“你已经不相信任何人了，我为什么还要把手伸给你？”"
+	_update_panels()
+	return true
 
 
 func _show_inspection_result(category: String, label: String, clue: Dictionary) -> void:
@@ -2045,6 +2065,25 @@ func _apply_relationship_pressure() -> void:
 		_log("黎明关系结算：" + str(high_pressure) + " 名屋内成员压力过高，信任和线索可信受到影响。")
 
 
+func _apply_low_trust_incident() -> void:
+	if int(state.get("trust", 100)) >= 25 or int(state.get("humans_inside", 0)) <= 0:
+		return
+	var chance := 35 + int(state.get("abandonment", 0)) * 5 + int(state.get("low_trust_incidents", 0)) * 3
+	if rng.randi_range(1, 100) > clampi(chance, 35, 85):
+		return
+	state["low_trust_incidents"] = int(state.get("low_trust_incidents", 0)) + 1
+	state["door"] = maxi(0, int(state.get("door", 0)) - 8)
+	state["outside_danger"] = mini(100, int(state.get("outside_danger", 0)) + 6)
+	state["evidence_integrity"] = maxi(0, int(state.get("evidence_integrity", 0)) - 5)
+	var helper_id := _pick_inside_character_id(true)
+	if helper_id.is_empty():
+		_log("信任过低：屋内有人趁你睡着拧动门锁，想替走廊里的声音开门。")
+	else:
+		var helper := _character_by_id(helper_id)
+		_adjust_character_relation(helper, -4, 12, "低信任擅自救人")
+		_log("信任过低：" + helper.get("short", "有人") + "趁你睡着拧动门锁，想擅自开门救人。")
+
+
 func _dawn_settlement(_events: Array) -> void:
 	current_phase = "dawn"
 	_set_background(str(ENVIRONMENT_BG.get("dawn", BG_ROOM)))
@@ -2064,6 +2103,7 @@ func _dawn_settlement(_events: Array) -> void:
 			_steal_random_inside_identity()
 			_log("黎明前有人失踪，身份被盗用池扩大。")
 	_apply_relationship_pressure()
+	_apply_low_trust_incident()
 	var food_cost := 8 + int(state["humans_inside"]) * 2
 	state["supplies"] = maxi(0, state["supplies"] - food_cost)
 	var supply_penalty := maxi(0, 25 - int(state["supplies"]))
@@ -2126,6 +2166,7 @@ func _record_day_summary(food_cost: int, recovery: int) -> void:
 	summary += "\n- 物资消耗 " + str(food_cost) + "，体力恢复 " + str(recovery) + "，下一夜外部危险 " + str(state.get("outside_danger", 0)) + "，隔离容量 " + str(state.get("quarantine_capacity", 1))
 	summary += "\n- 污染 " + str(state.get("contamination", 0)) + "，信任 " + str(state.get("trust", 0)) + "，线索可信 " + str(state.get("evidence_integrity", 0))
 	summary += "\n- 总拒绝 " + str(state.get("refusal_count", 0)) + "，连续拒绝真人 " + str(state.get("refused_humans_streak", 0)) + "，体力上限惩罚 " + str(state.get("stamina_cap_penalty", 0))
+	summary += "\n- 低信任事件 " + str(state.get("low_trust_incidents", 0)) + "，屋内是否仍愿意配合检查：" + ("低" if int(state.get("trust", 100)) < 25 else "可控")
 	summary += "\n- 污染上限惩罚 " + str(_contamination_stamina_cap_penalty()) + "，彻夜未眠 " + ("是" if bool(state.get("stayed_awake", false)) else "否") + "，照顾恢复 +" + str(state.get("care_recovery_bonus", 0))
 	var summaries: Array = state.get("day_summaries", [])
 	summaries.append(summary)
@@ -2232,7 +2273,7 @@ func _show_ending(kind: String) -> void:
 
 
 func _final_stats() -> String:
-	return "Session：" + session_id + "\n可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + "\n污染上限惩罚：" + str(_contamination_stamina_cap_penalty())
+	return "Session：" + session_id + "\n可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + "\n低信任事件：" + str(state.get("low_trust_incidents", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + "\n污染上限惩罚：" + str(_contamination_stamina_cap_penalty())
 
 
 func _update_panels() -> void:
@@ -2247,7 +2288,7 @@ func _update_panels() -> void:
 	status += _bar("门锁", state["door"], 100, "#ffc878")
 	status += _bar("隔离", state["quarantine"], 100, "#8ab4ff")
 	status += _bar("物资", state["supplies"], 100, "#d5e878")
-	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + " / 连拒真人：" + str(state.get("refused_humans_streak", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + " / 污染惩罚：" + str(_contamination_stamina_cap_penalty()) + "\n彻夜未眠：" + ("是" if bool(state.get("stayed_awake", false)) else "否") + " / 照顾恢复：+" + str(state.get("care_recovery_bonus", 0)) + "\n"
+	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n总拒绝：" + str(state.get("refusal_count", 0)) + " / 连拒真人：" + str(state.get("refused_humans_streak", 0)) + "\n低信任事件：" + str(state.get("low_trust_incidents", 0)) + "\n体力上限惩罚：" + str(state.get("stamina_cap_penalty", 0)) + " / 污染惩罚：" + str(_contamination_stamina_cap_penalty()) + "\n彻夜未眠：" + ("是" if bool(state.get("stayed_awake", false)) else "否") + " / 照顾恢复：+" + str(state.get("care_recovery_bonus", 0)) + "\n"
 	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
 	status += "隔离容量：" + str(state.get("quarantine_used", 0)) + "/" + str(state.get("quarantine_capacity", 1)) + "\n"

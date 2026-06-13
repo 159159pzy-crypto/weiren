@@ -328,6 +328,7 @@ def audit_godot() -> list[str]:
         "_initialize_relationships",
         "_adjust_character_relation",
         "_apply_relationship_pressure",
+        "_apply_low_trust_incident",
         "_record_day_summary",
         "_contamination_stamina_cap_penalty",
         "_relationship_summary",
@@ -385,7 +386,9 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing stamina cap token {token}")
     for token in ["今晚隔离区容量已满", "黄昏加固后当夜容量可到 2", "隔离容量"]:
         require(token in main, f"Main.gd missing quarantine capacity token {token}")
-    for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed", "self_suspicion", "day_summaries", "refusal_count", "refused_humans_streak", "stamina_cap_penalty", "stayed_awake", "care_recovery_bonus", "quarantine_capacity"]:
+    for token in ["low_trust_incidents", "真人拒绝检查", "擅自开门救人"]:
+        require(token in main, f"Main.gd missing low trust consequence token {token}")
+    for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed", "self_suspicion", "day_summaries", "refusal_count", "refused_humans_streak", "stamina_cap_penalty", "stayed_awake", "care_recovery_bonus", "quarantine_capacity", "low_trust_incidents"]:
         require(state_key in main, f"Main.gd missing prep state {state_key}")
     require('script = ExtResource("1_main")' in scene, "Main scene does not attach Main.gd")
     endings = re.findall(r'title = "([^"]*End[^"]*)"', main)
