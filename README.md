@@ -15,6 +15,10 @@ cd D:\game
 python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 ```
 
+可选 LLM/API Key 配置见 `.env.example`。至少设置 `LLM_API_KEY` 后，后端会调用 OpenAI-compatible chat completions；未配置、后端未启动或请求失败时会使用本地兜底对白。
+
+游戏标题页的“正式版说明”会显示同人免责声明、LLM 配置路径和发布前检查命令。对应配置文件为 `data/release_config.json`。
+
 ## 当前内容
 
 - 九夜流程：黄昏准备、门外来访、自由盘问、证据检查、隔离区处理、室内排查、睡眠事件、黎明结算。
@@ -24,6 +28,7 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 - 本地 FastAPI/SQLite 后端可接管角色对白表演，并记录盘问日志。
 - LLM API 为可选 OpenAI-compatible 配置；未配置时后端使用本地兜底表演。
 - 多结局：True、Good、Neutral、多个 Bad End、Hidden End。
+- M8 打磨项：标题页内置正式版说明、同人免责声明、API Key 配置说明和发布检查清单。
 
 ## 资产规范
 

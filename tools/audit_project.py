@@ -115,6 +115,7 @@ def audit_data() -> list[str]:
     characters = read_json("data/characters.json")
     day_rules = read_json("data/day_rules.json")
     events = read_json("data/events.json")
+    release_config = read_json("data/release_config.json")
 
     ids = {row["id"] for row in characters}
     require(len(characters) == 10, "Expected 10 characters including final-night duplicate")
@@ -122,11 +123,15 @@ def audit_data() -> list[str]:
     require(sorted(row["day"] for row in day_rules) == list(range(1, 10)), "Day rules must cover days 1-9")
     require(len(events.get("door_events", [])) >= 10, "Expected at least 10 door events")
     require(len(events.get("sleep_events", [])) >= 9, "Expected at least 9 sleep events")
+    require("同人" in release_config.get("disclaimer", ""), "Release config must include fan disclaimer")
+    require("LLM_API_KEY" in release_config.get("llm", {}).get("required_when_enabled", []), "Release config must document LLM_API_KEY")
+    require(len(release_config.get("release_checks", [])) >= 5, "Release config must list release checks")
     return [
         f"characters={len(characters)}",
         "day_rules=1-9",
         f"door_events={len(events['door_events'])}",
         f"sleep_events={len(events['sleep_events'])}",
+        "release_config=yes",
     ]
 
 
@@ -196,6 +201,8 @@ def audit_godot() -> list[str]:
         "CHAR_FAKE",
         "CHAR_MIMIC",
         "CHAR_RIKKI",
+        "RELEASE_CONFIG_PATH",
+        "_show_release_notes",
         "SLEEP_CG",
         "DOOR_EVENT_CG",
         "ENDING_CG",
@@ -252,6 +259,8 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing expanded indoor investigation token {token}")
     for token in ["character_trust", "character_stress", "guarded_id", "屋内关系", "黎明关系结算"]:
         require(token in main, f"Main.gd missing relationship system token {token}")
+    for token in ["正式版说明", "同人免责声明", "LLM / API Key", "发布前检查"]:
+        require(token in main, f"Main.gd missing release note token {token}")
     for token in ["chase_timer", "chase_resolved", "追赶余裕", "追赶超时"]:
         require(token in main, f"Main.gd missing chase event token {token}")
     for token in ["missing_ids", "stolen_ids", "inside_human_ids", "身份被盗回归预警", "可盗用外形"]:
@@ -270,7 +279,12 @@ def audit_backend() -> list[str]:
         require(token in backend, f"backend/main.py missing {token}")
     smoke = ROOT / "backend/smoke_test.py"
     require(smoke.exists(), "Missing backend smoke test")
-    return ["fastapi=yes", "sqlite=yes", "llm_fallback=yes"]
+    env_example = ROOT / ".env.example"
+    require(env_example.exists(), "Missing .env.example")
+    env_text = env_example.read_text(encoding="utf-8")
+    for token in ["LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL"]:
+        require(token in env_text, f".env.example missing {token}")
+    return ["fastapi=yes", "sqlite=yes", "llm_fallback=yes", "env_example=yes"]
 
 
 def audit_release() -> list[str]:

@@ -3,6 +3,7 @@ extends Control
 const CHARACTERS_PATH := "res://data/characters.json"
 const DAY_RULES_PATH := "res://data/day_rules.json"
 const EVENTS_PATH := "res://data/events.json"
+const RELEASE_CONFIG_PATH := "res://data/release_config.json"
 
 const BG_PEEPHOLE := "res://assets/generated/bg_peephole_hallway_16x9.png"
 const BG_ROOM := "res://assets/generated/bg_safe_room_clueboard_16x9.png"
@@ -50,6 +51,7 @@ var characters: Array = []
 var day_rules: Array = []
 var door_events: Array = []
 var sleep_events: Array = []
+var release_config := {}
 
 var state := {}
 var current_visitors: Array = []
@@ -90,6 +92,7 @@ func _load_data() -> void:
 	var events := _read_json_dict(EVENTS_PATH)
 	door_events = events.get("door_events", [])
 	sleep_events = events.get("sleep_events", [])
+	release_config = _read_json_dict(RELEASE_CONFIG_PATH)
 
 
 func _read_json_array(path: String) -> Array:
@@ -319,10 +322,30 @@ func _show_title() -> void:
 	_add_action("开始九夜", _start_new_game, "使用当前种子生成一局完整随机流程。")
 	_add_action("后端表演：" + ("开" if backend_enabled else "关"), _toggle_backend, "本地 FastAPI 后端只负责角色表演，不决定真相。")
 	_add_action("查看玩法摘要", _show_help, "打开规则和判定说明。")
+	_add_action("正式版说明", _show_release_notes, "查看同人免责声明、API Key 配置和发布检查。")
 
 
 func _show_help() -> void:
 	narrative.text = "[color=#9ef0dc]玩法摘要[/color]\n\n- 盘问和检查会消耗体力，过度盘问会提高伪人学习。\n- 伪人至少有三条可发现证据，但后期会适应单一规则。\n- 真人也可能表现可疑，拒绝真人会提高见死不救和身份被盗风险。\n- 隔离区是折中方案，但容量和耐久有限。\n- 第九夜会出现最终审判；保留至少三名可信人类、低污染并识别最终变身怪可达成真结局。"
+	_clear_actions()
+	_add_action("返回标题", _show_title)
+
+
+func _show_release_notes() -> void:
+	var llm: Dictionary = release_config.get("llm", {})
+	var checks: Array = release_config.get("release_checks", [])
+	var text := "[color=#9ef0dc]正式版说明[/color]\n\n"
+	text += "版本：" + str(release_config.get("version", "local")) + "\n\n"
+	text += "[color=#ffc878]同人免责声明[/color]\n" + str(release_config.get("disclaimer", "未配置。")) + "\n\n"
+	text += "[color=#ffc878]LLM / API Key[/color]\n"
+	text += "LLM 后端是可选项。配置 `LLM_API_KEY`、`LLM_BASE_URL`、`LLM_MODEL` 后启动本地 FastAPI；未配置或失败时使用本地兜底对白。\n"
+	text += "后端地址：" + str(llm.get("backend_url", BACKEND_DIALOGUE_URL)) + "\n"
+	text += "示例文件：" + str(llm.get("env_example", ".env.example")) + "\n"
+	text += "兜底策略：" + str(llm.get("fallback", "本地文本")) + "\n\n"
+	text += "[color=#ffc878]发布前检查[/color]\n"
+	for check in checks:
+		text += "- " + str(check) + "\n"
+	narrative.text = text
 	_clear_actions()
 	_add_action("返回标题", _show_title)
 
