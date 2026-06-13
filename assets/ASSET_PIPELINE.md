@@ -5,10 +5,13 @@ The game keeps character, CG, and background generation separate so visual probl
 ## Current Safety Decisions
 
 - Character LoRAs are disabled for final in-game character portraits.
-- The four in-game character portraits are prompt-only outputs with empty `loras` arrays in their sidecars.
+- Final in-game character portraits, backgrounds, and CG sidecars must have empty `loras` arrays.
 - Temporary character-LoRA test files must not be committed or referenced by Godot.
 - Backgrounds and CG used by the game must be 16:9.
 - ControlNet/preprocessor outputs are not part of the final asset set. Files named like `controlnet`, `preprocess`, `canny`, `depth`, `openpose`, `lineart`, `scribble`, or `softedge` fail the project audit.
+- Final sidecars must not reference `input_image`, `mask_image`, `comfyui_input_image`, or `comfyui_mask_image` unless that asset is intentionally inpainted and added to the audit allowlist.
+- Hires Fix must stay conservative: scale `1.0-1.75`, denoise `0.15-0.45`, and hires steps `1-24`.
+- VAE policy is `checkpoint_default`; external VAE names fail the audit until explicitly reviewed.
 
 ## Character Route
 
@@ -42,10 +45,12 @@ Final in-game backgrounds:
 | Safe-room clue board | `bg_safe_room_clueboard_16x9.png` |
 | Final CG | `cg_another_rikki_hui_16x9.png` |
 
+The final CG is adapted from `another_rikki_final.png`, whose sidecar has no LoRA entries. Older Hui character/background test images and LoRA-bearing background drafts were removed from `assets/generated` so they cannot be mistaken for shipping assets.
+
 ## Hui Workflow Notes
 
-- The Hui locked workflow is still available for character/CG direction, but its style LoRA strengths were reduced to conservative values.
-- New Hui sidecars include a `workflow_safety` summary listing active LoRA, sampler, VAE, and suspicious preprocessor nodes.
+- The Hui locked workflow is still available for experiments, but outputs are not allowed into the final generated asset directory unless their sidecars pass the same no-LoRA, VAE, Hires, and preprocessor audit rules.
+- New sidecars include a `workflow_safety` summary listing active LoRA, sampler, VAE, and suspicious preprocessor nodes where applicable.
 - The current final character portraits use the prompt-only no-LoRA route because the user reported character LoRA instability.
 
 ## Verification
@@ -56,4 +61,4 @@ Run the project audit after any asset change:
 python tools/audit_project.py
 ```
 
-The audit checks referenced assets, sidecars, Hires parameters, 16:9 backgrounds/CG, stale Godot references, and preprocessor-looking leaks.
+The audit checks referenced assets, sidecars, Hires parameters, 16:9 backgrounds/CG, stale Godot references, LoRA weights, VAE policy, orphaned generated files, and preprocessor-looking leaks.

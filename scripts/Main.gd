@@ -310,6 +310,8 @@ func _start_new_game() -> void:
 		"stamina_max": 100,
 		"contamination": 0,
 		"self_suspicion": 0,
+		"rule_distortion": 0,
+		"final_judgment": 0,
 		"abandonment": 0,
 		"supplies": 72,
 		"door": 100,
@@ -354,6 +356,7 @@ func _begin_day() -> void:
 	state["supplies_distributed"] = false
 	state["room_search_bonus"] = 0
 	_apply_self_suspicion_pressure()
+	_apply_rule_distortion_pressure()
 	_refresh_gun_charges()
 	_generate_visitors()
 	_set_background(BG_ROOM)
@@ -496,6 +499,18 @@ func _prep_calibrate_gun() -> void:
 	state["trust"] = maxi(0, int(state["trust"]) - 2)
 	_log("海铃校准驱逐装置。清除权变得可用，也让屋内更安静。")
 	_begin_day()
+
+
+func _apply_rule_distortion_pressure() -> void:
+	if int(state.get("day", 1)) < 9:
+		state["rule_distortion"] = 0
+		state["final_judgment"] = 0
+		return
+	var pressure := 20 + int(state["mimic_learning"]) / 4 + int(state["contamination"]) / 5 + int(state.get("self_suspicion", 0)) / 6
+	pressure -= int(state["evidence_integrity"]) / 8
+	state["rule_distortion"] = clampi(pressure, 0, 100)
+	state["evidence_integrity"] = maxi(20, int(state["evidence_integrity"]) - int(state["rule_distortion"]) / 10)
+	_log("规则失真：电视开始混写 Human / Alternate，单条检测可靠性下降。失真 " + str(state["rule_distortion"]) + "。")
 
 
 func _prep_sort_evidence() -> void:
@@ -987,7 +1002,10 @@ func _inspection_cost(category: String, base_cost: int) -> int:
 
 
 func _inspection_chance(category: String, base_chance: int) -> int:
-	return mini(98, base_chance + (6 if _detector_matches(category) else 0))
+	var chance := base_chance + (6 if _detector_matches(category) else 0)
+	if int(state.get("day", 1)) >= 9:
+		chance -= int(state.get("rule_distortion", 0)) / 8
+	return clampi(chance, 35, 98)
 
 
 func _inspect_action_label(label: String, category: String, base_cost: int) -> String:
@@ -1057,6 +1075,9 @@ func _add_evidence(visitor: Dictionary, clue: Dictionary) -> void:
 	state["evidence"].append(entry)
 	if state["evidence"].size() > 24:
 		state["evidence"].pop_front()
+	if character.get("id", "") == "taki_fake" and bool(clue.get("incriminating", false)):
+		state["final_judgment"] = mini(100, int(state.get("final_judgment", 0)) + int(clue.get("weight", 1)) * 6)
+		_log("最终审判证据增加：" + clue.get("title", "") + "。")
 
 
 func _decide_visitor(decision: String) -> void:
@@ -1163,6 +1184,7 @@ func _apply_quarantine(visitor: Dictionary, clue_score: int) -> void:
 		state["mimic_learning"] = mini(100, state["mimic_learning"] + 6)
 		if character.get("id", "") == "taki_fake" and clue_score >= 4:
 			final_mimic_identified = true
+			state["final_judgment"] = mini(100, int(state.get("final_judgment", 0)) + 25)
 		_log("变身怪撞上隔离玻璃，灯光里影子慢了半拍。")
 
 
@@ -1191,6 +1213,7 @@ func _apply_reject(visitor: Dictionary, clue_score: int) -> void:
 		if character.get("id", "") == "taki_fake":
 			if clue_score >= 4:
 				final_mimic_identified = true
+				state["final_judgment"] = mini(100, int(state.get("final_judgment", 0)) + 20)
 			else:
 				final_mimic_mishandled = true
 		_log("你没有开门。那张脸在猫眼后退了一步，却没有离开。")
@@ -1572,7 +1595,7 @@ func _judge_final_ending() -> String:
 	var trusted_humans := int(state["humans_inside"]) - int(state["missing"])
 	if final_mimic_mishandled:
 		return "hidden"
-	if final_mimic_identified and trusted_humans >= 3 and int(state["contamination"]) < 70:
+	if final_mimic_identified and trusted_humans >= 3 and int(state["contamination"]) < 70 and int(state.get("final_judgment", 0)) >= 35:
 		return "true"
 	if int(state["abandonment"]) >= 8:
 		return "no_one"
@@ -1582,6 +1605,8 @@ func _judge_final_ending() -> String:
 		return "purple"
 	if int(state["stolen"]) >= 5:
 		return "identity"
+	if int(state.get("rule_distortion", 0)) >= 75 and int(state.get("final_judgment", 0)) < 35:
+		return "distortion"
 	if int(state["fakes_inside"]) + int(state["mimics_inside"]) >= maxi(3, trusted_humans):
 		return "perfect_band"
 	if trusted_humans >= 2:
@@ -1635,6 +1660,9 @@ func _show_ending(kind: String) -> void:
 		"hidden":
 			title = "Hidden End：《另一个立希》"
 			body = "第九夜，猫眼外站着另一个立希。\n她知道你的每个决定，却不知道你为什么仍然想救人。"
+		"distortion":
+			title = "End：《规则失真》"
+			body = "电视显示 Human / Alternate 的乱码。你收集了很多线索，却没能把它们连成最终审判。"
 		_:
 			title = "End：《规则失真》"
 			body = "电视显示 Human / Alternate 的乱码。你无法再证明任何单条规则。"
@@ -1648,7 +1676,7 @@ func _show_ending(kind: String) -> void:
 
 
 func _final_stats() -> String:
-	return "可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n见死不救：" + str(state.get("abandonment", 0))
+	return "可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n见死不救：" + str(state.get("abandonment", 0))
 
 
 func _update_panels() -> void:
@@ -1661,7 +1689,7 @@ func _update_panels() -> void:
 	status += _bar("门锁", state["door"], 100, "#ffc878")
 	status += _bar("隔离", state["quarantine"], 100, "#8ab4ff")
 	status += _bar("物资", state["supplies"], 100, "#d5e878")
-	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n"
+	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n规则失真：" + str(state.get("rule_distortion", 0)) + "\n最终审判：" + str(state.get("final_judgment", 0)) + "\n可盗用外形：" + str(state.get("stolen_ids", []).size()) + "\n驱逐充能：" + str(state.get("gun_charges", 0)) + "\n"
 	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
 	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"
