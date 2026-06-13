@@ -561,6 +561,7 @@ func _start_new_game() -> void:
 		"room_searches_left": 0,
 		"cross_questions_left": 0,
 		"broadcasts_applied": [],
+		"day_summaries": [],
 		"log": [],
 		"evidence": []
 	}
@@ -602,7 +603,9 @@ func _begin_day() -> void:
 	narrative.text = "[color=#effff7]黄昏准备[/color]\n\n今天的新规则是：[color=#9ef0dc]" + rule.get("rule", "") + "[/color]\n" + rule.get("focus", "") + broadcast_text + "\n\n你还有一点时间决定今晚把体力花在哪里。"
 	_update_panels()
 	_clear_actions()
+	_add_action("查看昨日记录", _prep_review_records)
 	_add_action("修理门锁（体力 12，零件 8）", _prep_repair_door)
+	_add_action("检查隔离区（体力 4）", _prep_check_quarantine)
 	_add_action("加固隔离区（体力 15，物资 6）", _prep_fortify_quarantine)
 	_add_action("分配房间（体力 5）", _prep_assign_rooms)
 	_add_action("设定今日暗号（体力 4）", _prep_set_code)
@@ -617,6 +620,35 @@ func _begin_day() -> void:
 		_add_action("拒绝自检并继续指挥（信任 -8）", _prep_refuse_self_check)
 	_add_action("短休并进门口（体力 +10）", _prep_rest)
 	_add_action("开始门外来访", _start_visitors, "结束准备阶段。")
+
+
+func _prep_review_records() -> void:
+	var summaries: Array = state.get("day_summaries", [])
+	var text := "[color=#effff7]昨日记录[/color]\n\n"
+	if summaries.is_empty():
+		text += "还没有黎明结算记录。第一夜只能依靠今日广播和初始规则。"
+	else:
+		text += str(summaries.back())
+	text += "\n\n[color=#9ef0dc]最近证据[/color]\n" + _recent_lines(state.get("evidence", []), 8)
+	narrative.text = text
+	event_label.text = "[color=#ffc878]记录复盘[/color]\n复看昨日结算不会消耗体力。"
+	_update_panels()
+
+
+func _prep_check_quarantine() -> void:
+	if !_spend_stamina(4):
+		return
+	var intruders := int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))
+	var wear := intruders * 3 + int(state.get("quarantine_used", 0)) * 2
+	state["evidence_integrity"] = mini(100, int(state.get("evidence_integrity", 100)) + 6)
+	if wear > 0:
+		state["quarantine"] = maxi(0, int(state.get("quarantine", 0)) - wear)
+		state["contamination"] = mini(100, int(state.get("contamination", 0)) + intruders)
+		_log("检查隔离区：玻璃边缘有新裂纹，隔离耐久 -" + str(wear) + "。")
+	else:
+		state["trust"] = mini(100, int(state.get("trust", 0)) + 1)
+		_log("检查隔离区：锁扣、玻璃和观察孔都还可靠，线索可信上升。")
+	_begin_day()
 
 
 func _prep_repair_door() -> void:
@@ -1971,6 +2003,7 @@ func _dawn_settlement(_events: Array) -> void:
 	state["stamina"] = mini(state["stamina_max"], maxi(0, state["stamina"]) + recovery)
 	state["outside_danger"] = mini(100, state["outside_danger"] + int(state["abandonment"]) * 2 + int(state["stolen"]) * 2)
 	_log("黎明结算：消耗物资 " + str(food_cost) + "，恢复体力 " + str(recovery) + "。")
+	_record_day_summary(food_cost, recovery)
 	title_label.text = "第 " + str(state["day"]) + " 夜 / 黎明"
 	subtitle_label.text = "天亮并不代表安全，只代表你还能记录。"
 	event_label.text = "[color=#9ef0dc]黎明结算[/color]\n下一夜危险度：" + str(state["outside_danger"])
@@ -1987,6 +2020,19 @@ func _dawn_settlement(_events: Array) -> void:
 			state["day"] = int(state["day"]) + 1
 			_begin_day()
 		)
+
+
+func _record_day_summary(food_cost: int, recovery: int) -> void:
+	var summary := "D" + str(state.get("day", "?")) + " 黎明结算："
+	summary += "\n- 屋内真人 " + str(state.get("humans_inside", 0)) + "，入侵者 " + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0)))
+	summary += "\n- 失踪 " + str(state.get("missing", 0)) + "，身份被盗 " + str(state.get("stolen", 0)) + "，可盗用外形 " + str(state.get("stolen_ids", []).size())
+	summary += "\n- 物资消耗 " + str(food_cost) + "，体力恢复 " + str(recovery) + "，下一夜外部危险 " + str(state.get("outside_danger", 0))
+	summary += "\n- 污染 " + str(state.get("contamination", 0)) + "，信任 " + str(state.get("trust", 0)) + "，线索可信 " + str(state.get("evidence_integrity", 0))
+	var summaries: Array = state.get("day_summaries", [])
+	summaries.append(summary)
+	if summaries.size() > 9:
+		summaries.pop_front()
+	state["day_summaries"] = summaries
 
 
 func _dawn_text() -> String:

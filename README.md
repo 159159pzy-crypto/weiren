@@ -55,6 +55,7 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 - `assets/generated/cg_another_rikki_hui_16x9.png`
 - `data/cg_manifest.json` lists the current 39 audited 16:9 CG entries used by sleep events, all door events, inspections, and endings.
 - `data/broadcasts.json` drives day 1-9 TV/radio rule updates during dusk prep, with one-time state effects for evidence integrity, quarantine pressure, identity theft warnings, gun charges, self-check pressure, and final judgment distortion.
+- Dusk prep now includes yesterday-record review and quarantine inspection, so the player can connect dawn settlement outcomes back into the next night's decisions.
 
 ## 验证
 
