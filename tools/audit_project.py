@@ -344,6 +344,12 @@ def audit_godot() -> list[str]:
         "_ask_free_question",
         "_judge_final_ending",
         "_request_backend_dialogue",
+        "_fake_type_for_day",
+        "_fake_physical_clues",
+        "_fake_relation_clues",
+        "_fake_environment_clues",
+        "_fake_behavior_clues",
+        "_weaken_clue",
         "_apply_backend_dialogue_effects",
         "_backend_effect_summary",
         "suggested_options",
@@ -380,6 +386,8 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing chase event token {token}")
     for token in ["missing_ids", "stolen_ids", "inside_human_ids", "身份被盗回归预警", "可盗用外形"]:
         require(token in main, f"Main.gd missing identity theft token {token}")
+    for token in ["fake_type", "low", "social", "physical", "emotional", "advanced", "弱生理异常", "线索篡改", "情绪错位", "时间线矛盾"]:
+        require(token in main, f"Main.gd missing fake type evidence token {token}")
     for token in ["refusal_count", "refused_humans_streak", "stamina_cap_penalty", "连续拒绝真人", "补给缺口压低了体力上限"]:
         require(token in main, f"Main.gd missing refusal penalty token {token}")
     for token in ["stayed_awake", "care_recovery_bonus", "高污染压低体力上限", "连续熬夜让身体发冷", "爽世照顾让黎明恢复"]:

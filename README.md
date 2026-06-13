@@ -61,6 +61,7 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 - Stamina caps now account for supply shortage, missed supplies, high contamination, all-night guarding, and Soyo care recovery bonuses during dawn settlement.
 - Quarantine capacity now starts at 1 and can be raised to 2 for the night by fortifying the quarantine zone during dusk prep.
 - Low trust can now make real humans refuse inspections and can trigger dawn incidents where someone tries to open the door without permission.
+- Fake visitors now have internal low/social/physical/emotional/advanced types that change their evidence mix according to the design matrix.
 
 ## 验证
 

@@ -887,11 +887,13 @@ func _generate_visitors() -> void:
 			event = _door_event_by_id("visitor_asks_someone")
 		if day >= 4 and roles[i] != "human" and rng.randf() < 0.16:
 			event = _door_event_by_id("visitor_childlike")
+		var fake_type := _fake_type_for_day(day) if roles[i] == "fake" else ""
 		var visitor: Dictionary = {
 			"character": character,
 			"role": roles[i],
+			"fake_type": fake_type,
 			"event": event,
-			"evidence": _make_evidence(character, roles[i], event, day),
+			"evidence": _make_evidence(character, roles[i], event, day, fake_type),
 			"discovered": [],
 			"asked": 0,
 			"chase_timer": rng.randi_range(3, 5) if bool(event.get("chased", false)) else -1,
@@ -902,7 +904,19 @@ func _generate_visitors() -> void:
 		current_visitors.append(visitor)
 
 
-func _make_evidence(character: Dictionary, role: String, event: Dictionary, day: int) -> Array:
+func _fake_type_for_day(day: int) -> String:
+	var candidates := ["low"]
+	if day >= 2:
+		candidates.append("social")
+		candidates.append("physical")
+	if day >= 4:
+		candidates.append("emotional")
+	if day >= 6:
+		candidates.append("advanced")
+	return str(candidates[rng.randi_range(0, candidates.size() - 1)])
+
+
+func _make_evidence(character: Dictionary, role: String, event: Dictionary, day: int, fake_type := "") -> Array:
 	var evidence := []
 	var mislead: Array = character.get("mislead", [])
 	if role == "human":
@@ -939,35 +953,100 @@ func _make_evidence(character: Dictionary, role: String, event: Dictionary, day:
 		evidence.append(_clue("当前破绽", "她的" + character.get("short", "某人") + "式反应只有轮廓，没有重量。", "behavior", true, 2))
 		return evidence
 
-	var physical := []
-	physical.append(_clue("完美牙齿", "牙齿整齐得像同一套白瓷，没有磨损。", "teeth", true, 2))
+	var physical := _fake_physical_clues(day, fake_type)
+	var relation := _fake_relation_clues(character, event)
+	var environment := _fake_environment_clues(event)
+	var behavior := _fake_behavior_clues(fake_type)
 	if event.get("id", "") == "visitor_wrong_code" and !str(state.get("code_phrase", "")).is_empty():
-		physical.append(_clue("暗号错位", "她复述暗号时把“" + str(state["code_phrase"]) + "”说成了上一夜的版本。", "memory", true, 3))
+		relation.append(_clue("暗号错位", "她复述暗号时把“" + str(state["code_phrase"]) + "”说成了上一夜的版本。", "memory", true, 3))
 	elif event.get("id", "") == "visitor_knows_inside":
-		physical.append(_clue("知道屋内", "她说出房间细节，却把今晚分配的睡位说反了。", "environment", true, 3))
+		environment.append(_clue("知道屋内", "她说出房间细节，却把今晚分配的睡位说反了。", "environment", true, 3))
 	elif event.get("id", "") == "visitor_fake_radio":
-		physical.append(_clue("假情报", "广播里的规则停顿太整齐，像从线索板反向拼出来。", "environment", true, 2))
+		environment.append(_clue("假情报", "广播里的规则停顿太整齐，像从线索板反向拼出来。", "environment", true, 2))
 	elif event.get("id", "") == "visitor_asks_someone":
-		physical.append(_clue("关系矛盾", "她不断问屋内某人，却把两人吵架后的称呼说成了公开称呼。", "memory", true, 3))
+		relation.append(_clue("关系矛盾", "她不断问屋内某人，却把两人吵架后的称呼说成了公开称呼。", "memory", true, 3))
 	elif event.get("id", "") == "visitor_childlike":
-		physical.append(_clue("反常依赖", "她撒娇时情绪没有起伏，像把亲密关系读成了台词。", "behavior", true, 3))
+		behavior.append(_clue("反常依赖", "她撒娇时情绪没有起伏，像把亲密关系读成了台词。", "behavior", true, 3))
 	elif event.get("id", "") == "mistaken_chased":
-		physical.append(_clue("假追赶", "她说身后有脚步，但猫眼里的影子只复制她自己的动作。", "shadow", true, 2))
-	if day >= 2:
-		physical.append(_clue("红虹膜", "虹膜边缘有不自然的红偏。", "iris", true, 2))
-		physical.append(_clue("指尖黑泥", "指甲缝里有不属于走廊的黑泥。", "finger", true, 2))
-	if day >= 3:
-		physical.append(_clue("呼吸节拍错误", "她的喘息和说话没有同步。", "breath", true, 2))
-		physical.append(_clue("影子错位", "门缝灯光下，影子比身体更早移动。", "shadow", true, 3))
-	if day >= 4:
-		physical.append(_clue("足迹灼痕", "足迹检测板边缘留下细小灼痕。", "footprint", true, 3))
+		environment.append(_clue("假追赶", "她说身后有脚步，但猫眼里的影子只复制她自己的动作。", "shadow", true, 2))
 	physical.shuffle()
-	evidence.append(physical[0])
-	evidence.append(_clue("记忆漏洞", "共同记忆里的顺序错了，她把结果说在原因前面。", "memory", true, 2))
-	evidence.append(_clue("证词矛盾", "她的路线和门禁记录差了十二分钟。", "environment", true, 2))
-	if day >= 6:
-		evidence.append(_clue("诱导怀疑", "她不断把你的注意力推向另一个屋内的人。", "behavior", true, 2))
+	relation.shuffle()
+	environment.shuffle()
+	behavior.shuffle()
+	match fake_type:
+		"advanced":
+			evidence.append(_weaken_clue(physical[0]))
+			evidence.append(relation[0])
+			evidence.append(behavior[0])
+			evidence.append(_clue("线索篡改", "她把一条真实证词改成了能嫁祸屋内成员的版本。", "environment", true, 3))
+		"social":
+			evidence.append(physical[0])
+			evidence.append(relation[0])
+			evidence.append(_clue("称呼错误", "她在紧张时用了只有公开场合才会用的称呼。", "memory", true, 2))
+			evidence.append(environment[0])
+		"physical":
+			evidence.append(physical[0])
+			evidence.append(physical[min(1, physical.size() - 1)])
+			evidence.append(relation[0])
+			evidence.append(environment[0])
+		"emotional":
+			evidence.append(_weaken_clue(physical[0]))
+			evidence.append(relation[0])
+			evidence.append(behavior[0])
+			evidence.append(_clue("情绪错位", "事实都对，但她安慰人的节奏像从字幕里抄出来。", "behavior", true, 3))
+		_:
+			evidence.append(physical[0])
+			evidence.append(_clue("重复台词", "她把同一句求救说了三遍，停顿完全一致。", "behavior", true, 2))
+			evidence.append(environment[0])
 	return evidence
+
+
+func _fake_physical_clues(day: int, fake_type: String) -> Array:
+	var clues := [_clue("完美牙齿", "牙齿整齐得像同一套白瓷，没有磨损。", "teeth", true, 2)]
+	if day >= 2:
+		clues.append(_clue("红虹膜", "虹膜边缘有不自然的红偏。", "iris", true, 2))
+		clues.append(_clue("指尖黑泥", "指甲缝里有不属于走廊的黑泥。", "finger", true, 2))
+	if day >= 3:
+		clues.append(_clue("呼吸节拍错误", "她的喘息和说话没有同步。", "breath", true, 2))
+		clues.append(_clue("影子错位", "门缝灯光下，影子比身体更早移动。", "shadow", true, 3))
+	if day >= 4:
+		clues.append(_clue("足迹灼痕", "足迹检测板边缘留下细小灼痕。", "footprint", true, 3))
+	if fake_type == "advanced":
+		clues.append(_clue("弱生理异常", "只有眨眼间隔过于稳定，单独看不足以定罪。", "iris", true, 1))
+	return clues
+
+
+func _fake_relation_clues(character: Dictionary, event: Dictionary) -> Array:
+	return [
+		_clue("记忆漏洞", "共同记忆里的顺序错了，她把结果说在原因前面。", "memory", true, 2),
+		_clue("关系反应错误", "提到" + character.get("short", "她") + "在意的人时，她先看你的表情再决定悲伤。", "memory", true, 2),
+		_clue("事件称呼错位", "她描述" + event.get("name", "来访") + "时，用词像从线索板读出来。", "memory", true, 2),
+	]
+
+
+func _fake_environment_clues(event: Dictionary) -> Array:
+	return [
+		_clue("证词矛盾", "她的路线和门禁记录差了十二分钟。", "environment", true, 2),
+		_clue("时间线矛盾", "她声称刚从楼梯上来，鞋底却没有楼梯间的灰。", "environment", true, 2),
+		_clue("事件痕迹不符", event.get("name", "来访") + "留下的痕迹和她说的顺序对不上。", "environment", true, 2),
+	]
+
+
+func _fake_behavior_clues(fake_type: String) -> Array:
+	var clues := [
+		_clue("过度冷静", "门外那么近的脚步声里，她的音量没有一丝抖动。", "behavior", true, 2),
+		_clue("反复诱导", "她不回答问题，只反复让你怀疑另一个屋内的人。", "behavior", true, 2),
+	]
+	if fake_type == "low":
+		clues.append(_clue("重复台词", "同一句求救重复三次，停顿完全一致。", "behavior", true, 2))
+	return clues
+
+
+func _weaken_clue(clue: Dictionary) -> Dictionary:
+	var copy := clue.duplicate()
+	copy["title"] = "弱" + str(copy.get("title", "异常"))
+	copy["weight"] = maxi(1, int(copy.get("weight", 1)) - 1)
+	return copy
 
 
 func _clue(title: String, text: String, category: String, incriminating: bool, weight: int) -> Dictionary:
