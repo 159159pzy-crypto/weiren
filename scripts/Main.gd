@@ -4,6 +4,7 @@ const CHARACTERS_PATH := "res://data/characters.json"
 const DAY_RULES_PATH := "res://data/day_rules.json"
 const EVENTS_PATH := "res://data/events.json"
 const RELEASE_CONFIG_PATH := "res://data/release_config.json"
+const BROADCASTS_PATH := "res://data/broadcasts.json"
 
 const BG_PEEPHOLE := "res://assets/generated/bg_peephole_hallway_16x9.png"
 const BG_ROOM := "res://assets/generated/bg_safe_room_clueboard_16x9.png"
@@ -129,6 +130,7 @@ var characters: Array = []
 var day_rules: Array = []
 var door_events: Array = []
 var sleep_events: Array = []
+var broadcasts: Array = []
 var release_config := {}
 
 var state := {}
@@ -172,6 +174,7 @@ func _load_data() -> void:
 	var events := _read_json_dict(EVENTS_PATH)
 	door_events = events.get("door_events", [])
 	sleep_events = events.get("sleep_events", [])
+	broadcasts = _read_json_array(BROADCASTS_PATH)
 	release_config = _read_json_dict(RELEASE_CONFIG_PATH)
 
 
@@ -557,6 +560,7 @@ func _start_new_game() -> void:
 		"room_search_bonus": 0,
 		"room_searches_left": 0,
 		"cross_questions_left": 0,
+		"broadcasts_applied": [],
 		"log": [],
 		"evidence": []
 	}
@@ -585,12 +589,17 @@ func _begin_day() -> void:
 		_apply_rule_distortion_pressure()
 		_refresh_gun_charges()
 		_generate_visitors()
+		_apply_daily_broadcast()
 	_set_background(str(ENVIRONMENT_BG.get("prep", BG_ROOM)))
 	var rule := _rule_for_day(state["day"])
+	var broadcast := _broadcast_for_day(int(state["day"]))
+	var broadcast_text := ""
+	if !broadcast.is_empty():
+		broadcast_text = "\n\n[color=#ffc878]" + str(broadcast.get("title", "广播")) + "[/color]\n" + str(broadcast.get("text", ""))
 	title_label.text = "第 " + str(state["day"]) + " 夜"
 	subtitle_label.text = rule.get("rule", "")
-	event_label.text = "[color=#ffc878]" + rule.get("focus", "") + "[/color]\n今晚预计来访：" + str(current_visitors.size()) + " 人"
-	narrative.text = "[color=#effff7]黄昏准备[/color]\n\n今天的新规则是：[color=#9ef0dc]" + rule.get("rule", "") + "[/color]\n" + rule.get("focus", "") + "\n\n你还有一点时间决定今晚把体力花在哪里。"
+	event_label.text = "[color=#ffc878]" + rule.get("focus", "") + "[/color]\n今晚预计来访：" + str(current_visitors.size()) + " 人" + ("\n" + str(broadcast.get("title", "")) if !broadcast.is_empty() else "")
+	narrative.text = "[color=#effff7]黄昏准备[/color]\n\n今天的新规则是：[color=#9ef0dc]" + rule.get("rule", "") + "[/color]\n" + rule.get("focus", "") + broadcast_text + "\n\n你还有一点时间决定今晚把体力花在哪里。"
 	_update_panels()
 	_clear_actions()
 	_add_action("修理门锁（体力 12，零件 8）", _prep_repair_door)
@@ -2170,6 +2179,77 @@ func _rule_for_day(day: int) -> Dictionary:
 		if int(rule.get("day", 0)) == day:
 			return rule
 	return day_rules.back() if !day_rules.is_empty() else {}
+
+
+func _broadcast_for_day(day: int) -> Dictionary:
+	for broadcast in broadcasts:
+		if int(broadcast.get("day", 0)) == day:
+			return broadcast
+	return {}
+
+
+func _apply_daily_broadcast() -> void:
+	var day := int(state.get("day", 1))
+	var applied: Array = state.get("broadcasts_applied", [])
+	if day in applied:
+		return
+	var broadcast := _broadcast_for_day(day)
+	if broadcast.is_empty():
+		return
+	var effects: Dictionary = broadcast.get("effects", {})
+	for key in effects.keys():
+		_apply_broadcast_effect(str(key), int(effects[key]))
+	applied.append(day)
+	state["broadcasts_applied"] = applied
+	_log("电视/广播更新：" + str(broadcast.get("title", "未知广播")) + _broadcast_effect_summary(effects))
+
+
+func _apply_broadcast_effect(key: String, delta: int) -> void:
+	match key:
+		"evidence_integrity":
+			state[key] = clampi(int(state.get(key, 100)) + delta, 0, 100)
+		"mimic_learning", "outside_danger", "self_suspicion", "rule_distortion", "final_judgment", "contamination":
+			state[key] = clampi(int(state.get(key, 0)) + delta, 0, 100)
+		"trust", "quarantine", "door", "supplies", "stamina":
+			state[key] = clampi(int(state.get(key, 0)) + delta, 0, 100)
+		"gun_charges":
+			state[key] = clampi(int(state.get(key, 0)) + delta, 0, 3)
+		_:
+			state[key] = int(state.get(key, 0)) + delta
+
+
+func _broadcast_effect_summary(effects: Dictionary) -> String:
+	if effects.is_empty():
+		return "。"
+	var parts := []
+	for key in effects.keys():
+		var delta := int(effects[key])
+		parts.append(_broadcast_effect_label(str(key)) + (" +" if delta >= 0 else " ") + str(delta))
+	return "（" + "，".join(parts) + "）。"
+
+
+func _broadcast_effect_label(key: String) -> String:
+	match key:
+		"evidence_integrity":
+			return "线索可信"
+		"mimic_learning":
+			return "伪人学习"
+		"outside_danger":
+			return "外部危险"
+		"self_suspicion":
+			return "自证压力"
+		"rule_distortion":
+			return "规则失真"
+		"final_judgment":
+			return "最终审判"
+		"trust":
+			return "信任"
+		"quarantine":
+			return "隔离"
+		"gun_charges":
+			return "驱逐充能"
+		_:
+			return key
 
 
 func _character_by_id(id: String) -> Dictionary:

@@ -1,0 +1,65 @@
+[
+  {
+    "day": 1,
+    "id": "broadcast_teeth",
+    "title": "电视雪花：牙齿规则",
+    "text": "画面里反复播放一张笑脸。字幕说：今晚先看牙齿，但不要只相信牙齿。",
+    "effects": {"evidence_integrity": 3}
+  },
+  {
+    "day": 2,
+    "id": "broadcast_multi_clue",
+    "title": "广播插播：红虹膜与足迹",
+    "text": "广播声提醒：红虹膜、指泥、足迹必须交叉验证，单一异常会误伤真人。",
+    "effects": {"evidence_integrity": 4, "mimic_learning": 1}
+  },
+  {
+    "day": 3,
+    "id": "broadcast_quarantine",
+    "title": "走廊喇叭：隔离区启用",
+    "text": "隔离不是信任，也不是驱逐。它只是给判断争取时间。",
+    "effects": {"quarantine": 5, "trust": -1}
+  },
+  {
+    "day": 4,
+    "id": "broadcast_chase",
+    "title": "门外急讯：追赶事件",
+    "text": "如果脚步声正在靠近，盘问本身也会成为危险。",
+    "effects": {"outside_danger": 4, "evidence_integrity": 2}
+  },
+  {
+    "day": 5,
+    "id": "broadcast_identity_theft",
+    "title": "失踪者名单：身份可盗用",
+    "text": "失踪不是结束。有人会带着失踪者的脸再次敲门。",
+    "effects": {"outside_danger": 6, "self_suspicion": 2}
+  },
+  {
+    "day": 6,
+    "id": "broadcast_evidence_tamper",
+    "title": "线索板噪声：证据会被篡改",
+    "text": "纸条的位置、说话的顺序、你以为记住的暗号，都可能被改写。",
+    "effects": {"evidence_integrity": -6, "mimic_learning": 4}
+  },
+  {
+    "day": 7,
+    "id": "broadcast_cleaner",
+    "title": "清除者频道：驱逐装置",
+    "text": "清除权不等于真相。扣动装置前，先确认你不是在替伪人清理证人。",
+    "effects": {"gun_charges": 1, "trust": -2}
+  },
+  {
+    "day": 8,
+    "id": "broadcast_self_check",
+    "title": "反向审查：立希也需要证明",
+    "text": "屋内的人开始怀疑猫眼后的你。今天的规则也会检查观察者。",
+    "effects": {"self_suspicion": 8, "trust": -4}
+  },
+  {
+    "day": 9,
+    "id": "broadcast_final_judgment",
+    "title": "最终审判：规则失真",
+    "text": "电视只剩 Human / Alternate 的乱码。最后一夜，单条规则全部失效。",
+    "effects": {"rule_distortion": 10, "final_judgment": 8, "mimic_learning": 5}
+  }
+]

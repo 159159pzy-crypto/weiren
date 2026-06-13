@@ -139,6 +139,7 @@ def audit_data() -> list[str]:
     day_rules = read_json("data/day_rules.json")
     events = read_json("data/events.json")
     release_config = read_json("data/release_config.json")
+    broadcasts = read_json("data/broadcasts.json")
 
     ids = {row["id"] for row in characters}
     require(len(characters) == 10, "Expected 10 characters including final-night duplicate")
@@ -149,6 +150,12 @@ def audit_data() -> list[str]:
     for event_id in ["visitor_asks_someone", "visitor_childlike", "mistaken_chased"]:
         require(event_id in door_event_ids, f"Missing expanded door event {event_id}")
     require(len(events.get("sleep_events", [])) >= 9, "Expected at least 9 sleep events")
+    require(sorted(row.get("day", 0) for row in broadcasts) == list(range(1, 10)), "Broadcasts must cover days 1-9")
+    broadcast_ids = {row.get("id", "") for row in broadcasts}
+    for broadcast_id in ["broadcast_teeth", "broadcast_identity_theft", "broadcast_cleaner", "broadcast_self_check", "broadcast_final_judgment"]:
+        require(broadcast_id in broadcast_ids, f"Missing daily broadcast {broadcast_id}")
+    for row in broadcasts:
+        require(isinstance(row.get("effects", {}), dict), f"Broadcast {row.get('id', '?')} must define effects")
     require("同人" in release_config.get("disclaimer", ""), "Release config must include fan disclaimer")
     require("LLM_API_KEY" in release_config.get("llm", {}).get("required_when_enabled", []), "Release config must document LLM_API_KEY")
     require(len(release_config.get("release_checks", [])) >= 6, "Release config must list release checks")
@@ -158,6 +165,7 @@ def audit_data() -> list[str]:
         "day_rules=1-9",
         f"door_events={len(events['door_events'])}",
         f"sleep_events={len(events['sleep_events'])}",
+        "broadcasts=1-9",
         "release_config=yes",
     ]
 
@@ -282,6 +290,12 @@ def audit_godot() -> list[str]:
         "CHAR_MIMIC",
         "CHAR_RIKKI",
         "RELEASE_CONFIG_PATH",
+        "BROADCASTS_PATH",
+        "_broadcast_for_day",
+        "_apply_daily_broadcast",
+        "_apply_broadcast_effect",
+        "broadcasts_applied",
+        "电视/广播更新",
         "_show_release_notes",
         "SLEEP_CG",
         "DOOR_EVENT_CG",
