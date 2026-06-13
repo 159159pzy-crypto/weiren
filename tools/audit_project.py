@@ -135,6 +135,9 @@ def audit_godot() -> list[str]:
         "_prep_set_code",
         "_prep_select_detector",
         "_prep_distribute_supplies",
+        "_prep_accept_self_check",
+        "_prep_refuse_self_check",
+        "_apply_self_suspicion_pressure",
         "_indoor_free_talk",
         "_indoor_memory_check",
         "_indoor_face_check",
@@ -151,13 +154,15 @@ def audit_godot() -> list[str]:
         require(stale not in main, f"Main.gd still references old character asset {stale}")
     for label in ["分配房间", "设定今日暗号", "选择重点检测设备", "分配物资"]:
         require(label in main, f"Main.gd missing prep action {label}")
+    for label in ["接受屋内自检", "拒绝自检并继续指挥"]:
+        require(label in main, f"Main.gd missing self suspicion action {label}")
     for label in ["从门缝观察", "拿手电筒查看", "锁门继续睡"]:
         require(label in main, f"Main.gd missing sleep action {label}")
     for label in ["室内自由对话", "共同记忆盘问", "屋内牙齿/虹膜检查", "屋内指泥/足迹检测", "屋内呼吸/影子观察"]:
         require(label in main, f"Main.gd missing indoor investigation action {label}")
     for token in ["chase_timer", "chase_resolved", "追赶余裕", "追赶超时"]:
         require(token in main, f"Main.gd missing chase event token {token}")
-    for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed"]:
+    for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed", "self_suspicion"]:
         require(state_key in main, f"Main.gd missing prep state {state_key}")
     require('script = ExtResource("1_main")' in scene, "Main scene does not attach Main.gd")
     endings = re.findall(r'title = "([^"]*End[^"]*)"', main)

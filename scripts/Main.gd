@@ -309,6 +309,7 @@ func _start_new_game() -> void:
 		"stamina": 100,
 		"stamina_max": 100,
 		"contamination": 0,
+		"self_suspicion": 0,
 		"abandonment": 0,
 		"supplies": 72,
 		"door": 100,
@@ -348,6 +349,7 @@ func _begin_day() -> void:
 	state["rooms_assigned"] = false
 	state["supplies_distributed"] = false
 	state["room_search_bonus"] = 0
+	_apply_self_suspicion_pressure()
 	_generate_visitors()
 	_set_background(BG_ROOM)
 	var rule := _rule_for_day(state["day"])
@@ -365,6 +367,9 @@ func _begin_day() -> void:
 	_add_action("分配物资（物资 10）", _prep_distribute_supplies)
 	_add_action("整理线索板（体力 6）", _prep_sort_evidence)
 	_add_action("安排守夜（物资 8，信任 -2）", _prep_set_guard)
+	if int(state["day"]) >= 8:
+		_add_action("接受屋内自检（体力 8，信任 +）", _prep_accept_self_check)
+		_add_action("拒绝自检并继续指挥（信任 -8）", _prep_refuse_self_check)
 	_add_action("短休并进门口（体力 +10）", _prep_rest)
 	_add_action("开始门外来访", _start_visitors, "结束准备阶段。")
 
@@ -431,6 +436,35 @@ func _prep_distribute_supplies() -> void:
 	state["trust"] = mini(100, state["trust"] + 8)
 	state["stamina"] = mini(state["stamina_max"], state["stamina"] + 6)
 	_log("提前分配物资。有人终于愿意相信今晚不是只靠怀疑活下去。")
+	_begin_day()
+
+
+func _apply_self_suspicion_pressure() -> void:
+	if int(state.get("day", 1)) < 8:
+		return
+	var pressure := int(state["contamination"]) / 8 + int(state["stolen"]) * 4 + int(state["mimic_learning"]) / 10
+	if int(state["trust"]) < 35:
+		pressure += 8
+	state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + pressure)
+	if pressure > 0:
+		_log("不可信视角加深：屋内开始检查立希本人，自证压力 +" + str(pressure) + "。")
+
+
+func _prep_accept_self_check() -> void:
+	if !_spend_stamina(8):
+		return
+	state["self_suspicion"] = maxi(0, int(state["self_suspicion"]) - 28)
+	state["trust"] = mini(100, int(state["trust"]) + 6)
+	state["contamination"] = mini(100, int(state["contamination"]) + 2)
+	_log("你接受虹膜、呼吸和影子复检。痛苦是真的，但这至少暂时证明你还站在门内。")
+	_begin_day()
+
+
+func _prep_refuse_self_check() -> void:
+	state["self_suspicion"] = mini(100, int(state["self_suspicion"]) + 18)
+	state["trust"] = maxi(0, int(state["trust"]) - 8)
+	state["mimic_learning"] = mini(100, int(state["mimic_learning"]) + 4)
+	_log("你拒绝自检。屋内沉默了一秒，伪人也学会了这秒沉默。")
 	_begin_day()
 
 
@@ -1477,6 +1511,8 @@ func _dawn_text() -> String:
 		text += "[color=#ff8f8f]线索板上有几张卡片的位置不对。[/color]\n"
 	if state["trust"] < 35:
 		text += "[color=#ff8f8f]屋内的人开始怀疑你不是唯一的立希。[/color]\n"
+	if int(state.get("self_suspicion", 0)) >= 60:
+		text += "[color=#ff8f8f]海铃要求复检你的虹膜和影子。[/color]\n"
 	if state["supplies"] < 20:
 		text += "[color=#ffc878]物资不足，明天体力上限会继续下降。[/color]\n"
 	return text
@@ -1492,6 +1528,8 @@ func _judge_final_ending() -> String:
 		return "no_one"
 	if int(state["contamination"]) >= 90:
 		return "purple"
+	if int(state.get("self_suspicion", 0)) >= 85:
+		return "purple"
 	if int(state["stolen"]) >= 5:
 		return "identity"
 	if int(state["fakes_inside"]) + int(state["mimics_inside"]) >= maxi(3, trusted_humans):
@@ -1504,7 +1542,7 @@ func _judge_final_ending() -> String:
 func _check_immediate_failure() -> void:
 	if int(state["door"]) <= 0:
 		_show_ending("door")
-	elif int(state["contamination"]) >= 100:
+	elif int(state["contamination"]) >= 100 or int(state.get("self_suspicion", 0)) >= 100:
 		_show_ending("purple")
 	elif int(state["abandonment"]) >= 10:
 		_show_ending("no_one")
@@ -1537,7 +1575,7 @@ func _show_ending(kind: String) -> void:
 			body = "每个人都开始用同样的节奏呼吸，同样的角度微笑。\n这支乐队终于没有任何分歧。"
 		"purple":
 			title = "Bad End：《紫色是偏红的蓝色》"
-			body = "污染值越过阈值。海铃举起驱逐装置，问你最后一个问题：\n'你怎么证明你还站在门内？'"
+			body = "污染值或自证压力越过阈值。海铃举起驱逐装置，问你最后一个问题：\n'你怎么证明你还站在门内？'"
 		"identity":
 			title = "Bad End：《身份被盗》"
 			body = "失踪者陆续回来了。她们知道暗号，知道房间，知道你的语气。\n只有真正的她们不再需要开门。"
@@ -1560,7 +1598,7 @@ func _show_ending(kind: String) -> void:
 
 
 func _final_stats() -> String:
-	return "可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n污染：" + str(state.get("contamination", 0)) + "\n见死不救：" + str(state.get("abandonment", 0))
+	return "可信人类：" + str(state.get("humans_inside", 0)) + "\n伪人入侵：" + str(int(state.get("fakes_inside", 0)) + int(state.get("mimics_inside", 0))) + "\n失踪：" + str(state.get("missing", 0)) + "\n身份被盗：" + str(state.get("stolen", 0)) + "\n污染：" + str(state.get("contamination", 0)) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n见死不救：" + str(state.get("abandonment", 0))
 
 
 func _update_panels() -> void:
@@ -1573,7 +1611,7 @@ func _update_panels() -> void:
 	status += _bar("门锁", state["door"], 100, "#ffc878")
 	status += _bar("隔离", state["quarantine"], 100, "#8ab4ff")
 	status += _bar("物资", state["supplies"], 100, "#d5e878")
-	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n"
+	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n自证压力：" + str(state.get("self_suspicion", 0)) + "\n"
 	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
 	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
 	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"
