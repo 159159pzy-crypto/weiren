@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +21,8 @@ Role = Literal["human", "fake", "mimic"]
 
 
 class DialogueRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     session_id: str = "local"
     character_id: str
     character_name: str
@@ -42,16 +44,18 @@ class DialogueRequest(BaseModel):
 
 
 class DialogueResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     dialogue: str
     emotion: str
     expression: str
     action: str
     clue_triggered: bool = False
     clue_id: str | None = None
-    trust_delta: int = 0
-    stress_delta: int = 0
-    stamina_cost: int = 1
-    suggested_options: list[str] = Field(default_factory=list)
+    trust_delta: int = Field(default=0, ge=-10, le=10)
+    stress_delta: int = Field(default=0, ge=-10, le=10)
+    stamina_cost: int = Field(default=1, ge=0, le=5)
+    suggested_options: list[str] = Field(default_factory=list, max_length=3)
     source: str = "fallback"
 
 

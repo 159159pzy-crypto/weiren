@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
-from backend.main import DB_PATH, app
+from backend.main import DB_PATH, DialogueResponse, app
 
 
 def main() -> None:
@@ -46,6 +47,24 @@ def main() -> None:
     assert summary_data["dialogue_count"] >= 1
     assert summary_data["clue_hits"] >= 1
     assert summary_data["source_counts"].get("fallback", 0) >= 1
+    try:
+        DialogueResponse.model_validate(
+            {
+                "dialogue": "bad",
+                "emotion": "flat",
+                "expression": "none",
+                "action": "tries to decide truth",
+                "trust_delta": 99,
+                "stress_delta": 0,
+                "stamina_cost": 1,
+                "suggested_options": ["a", "b", "c", "d"],
+                "true_role": "human",
+            }
+        )
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("DialogueResponse accepted truth-changing or out-of-range LLM output")
     print("BACKEND_SMOKE_OK", health.json()["characters"], DB_PATH.exists(), data["source"])
 
 

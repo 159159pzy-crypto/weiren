@@ -442,10 +442,13 @@ def audit_godot() -> list[str]:
 
 def audit_backend() -> list[str]:
     backend = (ROOT / "backend/main.py").read_text(encoding="utf-8")
-    for token in ["FastAPI", "sqlite3", "DialogueRequest", "DialogueResponse", "/v1/dialogue", "/v1/session/{session_id}/summary", "source_counts", "clue_hits", "LLM_API_KEY", "emotion", "expression", "trust_delta", "stress_delta", "stamina_cost", "suggested_options", "chase_type"]:
+    for token in ["FastAPI", "sqlite3", "DialogueRequest", "DialogueResponse", "ConfigDict", "extra=\"forbid\"", "/v1/dialogue", "/v1/session/{session_id}/summary", "source_counts", "clue_hits", "LLM_API_KEY", "emotion", "expression", "trust_delta", "stress_delta", "stamina_cost", "suggested_options", "max_length=3", "chase_type"]:
         require(token in backend, f"backend/main.py missing {token}")
     smoke = ROOT / "backend/smoke_test.py"
     require(smoke.exists(), "Missing backend smoke test")
+    smoke_text = smoke.read_text(encoding="utf-8")
+    for token in ["DialogueResponse.model_validate", "ValidationError", "true_role", "out-of-range LLM output"]:
+        require(token in smoke_text, f"backend/smoke_test.py missing LLM contract token {token}")
     env_example = ROOT / ".env.example"
     require(env_example.exists(), "Missing .env.example")
     env_text = env_example.read_text(encoding="utf-8")
