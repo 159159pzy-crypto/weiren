@@ -16,7 +16,9 @@
     "controlnet_preprocessor_nodes": [],
     "lora_policy": "no final CG LoRA; derived from audited project assets",
     "hires_fix": "not rerun here; this adapter color-grades and composites existing 16:9 assets",
-    "vae_policy": "checkpoint_default from source generation"
+    "vae_policy": "checkpoint_default from source generation",
+    "active_loras": [],
+    "suspicious_preprocessor_nodes": []
   },
   "variant": "cg_ending_distortion_16x9",
   "role": "ending",

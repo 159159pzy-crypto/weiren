@@ -91,6 +91,8 @@ def assert_workflow_safety_sane(path: str) -> None:
     require("workflow_safety" in sidecar, f"{path} sidecar missing workflow_safety audit summary")
     workflow_safety = sidecar.get("workflow_safety", {})
     require(isinstance(workflow_safety, dict), f"{path} workflow_safety must be an object when present")
+    for key in ["active_loras", "controlnet_preprocessor_nodes", "suspicious_preprocessor_nodes"]:
+        require(key in workflow_safety, f"{path} workflow_safety missing explicit {key} list")
     active_loras = workflow_safety.get("active_loras", [])
     require(active_loras in (None, []), f"{path} workflow_safety reports active LoRA: {active_loras}")
     preprocessor_nodes = workflow_safety.get("controlnet_preprocessor_nodes", [])
@@ -110,13 +112,28 @@ def assert_workflow_safety_sane(path: str) -> None:
 
 
 def assert_no_preprocessor_leaks() -> None:
-    banned = ["controlnet", "preprocess", "preprocessor", "canny", "depth", "openpose", "lineart", "scribble", "softedge"]
+    banned = ["controlnet", "preprocess", "preprocessor", "canny", "depth", "openpose", "dwpose", "lineart", "scribble", "softedge", "mlsd", "normalbae"]
+    banned_node_tokens = [
+        "controlnetpreprocessor",
+        "cannyedgepreprocessor",
+        "dwpreprocessor",
+        "dwposepreprocessor",
+        "openposepreprocessor",
+        "depthanythingpreprocessor",
+        "midasdepthmappreprocessor",
+        "hedpreprocessor",
+        "lineartpreprocessor",
+        "mlsdpreprocessor",
+        "normalbaepreprocessor",
+        "scribblepreprocessor",
+        "softedgepreprocessor",
+    ]
     for path in (ROOT / "assets/generated").iterdir():
         lower_name = path.name.lower()
         require(not any(token in lower_name for token in banned), f"Preprocessor-looking generated file leaked: {path.name}")
         if path.suffix == ".json":
             text = path.read_text(encoding="utf-8").lower()
-            require(not any(token in text for token in ["controlnetpreprocessor", "cannyedgepreprocessor", "dwpreprocessor", "openposepreprocessor"]), f"Preprocessor node leaked in {path.name}")
+            require(not any(token in text for token in banned_node_tokens), f"Preprocessor node leaked in {path.name}")
 
 
 def assert_no_generated_orphans(allowed_stems: set[str]) -> None:
