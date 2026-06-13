@@ -12,6 +12,7 @@ The game keeps character, CG, and background generation separate so visual probl
 - Final sidecars must not reference `input_image`, `mask_image`, `comfyui_input_image`, or `comfyui_mask_image` unless that asset is intentionally inpainted and added to the audit allowlist.
 - Hires Fix must stay conservative: scale `1.0-1.75`, denoise `0.15-0.45`, and hires steps `1-24`.
 - VAE policy is `checkpoint_default`; external VAE names fail the audit until explicitly reviewed.
+- The release audit also checks the locked Hui character/CG workflow and the SDXL 16:9 background workflow for ControlNet/preprocessor nodes, LoRA weights above `0.45`, external VAE loaders, and unsafe Hires pass settings.
 
 ## Character Route
 
@@ -77,4 +78,4 @@ Run the project audit after any asset change:
 python tools/audit_project.py
 ```
 
-The audit checks referenced assets, sidecars, Hires parameters, 16:9 backgrounds/CG, stale Godot references, LoRA weights, VAE policy, orphaned generated files, and preprocessor-looking leaks.
+The audit checks referenced assets, sidecars, Hires parameters, 16:9 backgrounds/CG, stale Godot references, LoRA weights, VAE policy, orphaned generated files, preprocessor-looking leaks, and the locked generation workflow templates.

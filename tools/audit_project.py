@@ -9,6 +9,11 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SD_ASSET_SKILL_WORKFLOWS = Path.home() / ".codex" / "skills" / "stable-diffusion-assets" / "assets" / "workflows"
+AUDITED_WORKFLOW_TEMPLATES = [
+    SD_ASSET_SKILL_WORKFLOWS / "hui-locked-prompt-only.api.json",
+    SD_ASSET_SKILL_WORKFLOWS / "background-16x9-4070.api.json",
+]
 
 
 class AuditFailure(Exception):
@@ -151,6 +156,51 @@ def assert_no_input_image_leaks(path: str) -> None:
         require(value in (None, ""), f"{path} sidecar still references {key}: {value}")
 
 
+def assert_generation_workflows_sane() -> None:
+    suspicious_tokens = [
+        "controlnet",
+        "preprocessor",
+        "canny",
+        "depth",
+        "openpose",
+        "dwpose",
+        "lineart",
+        "scribble",
+        "softedge",
+        "mlsd",
+        "normalbae",
+    ]
+    for workflow_path in AUDITED_WORKFLOW_TEMPLATES:
+        require(workflow_path.exists(), f"Missing audited workflow template {workflow_path}")
+        workflow = json.loads(workflow_path.read_text(encoding="utf-8"))
+        workflow_text = json.dumps(workflow, ensure_ascii=False).lower()
+        require(not any(token in workflow_text for token in suspicious_tokens), f"{workflow_path.name} contains ControlNet/preprocessor-looking nodes")
+
+        for node_id, node in workflow.items():
+            if not isinstance(node, dict):
+                continue
+            class_type = str(node.get("class_type", ""))
+            inputs = node.get("inputs", {}) if isinstance(node.get("inputs", {}), dict) else {}
+            title = str(node.get("_meta", {}).get("title", "")) if isinstance(node.get("_meta"), dict) else ""
+            label = f"{workflow_path.name} node {node_id} ({title or class_type})"
+
+            require(class_type != "VAELoader", f"{label} loads an external VAE")
+            for key in ["vae_name", "external_vae"]:
+                require(key not in inputs, f"{label} references {key}")
+
+            if class_type == "LoraLoader":
+                model_weight = abs(float(inputs.get("strength_model", 0.0)))
+                clip_weight = abs(float(inputs.get("strength_clip", model_weight)))
+                require(model_weight <= 0.45, f"{label} LoRA model weight is too high: {model_weight}")
+                require(clip_weight <= 0.45, f"{label} LoRA clip weight is too high: {clip_weight}")
+
+            if class_type == "KSampler" and "hires" in title.lower():
+                steps = int(inputs.get("steps", 0))
+                denoise = float(inputs.get("denoise", 0.0))
+                require(1 <= steps <= 24, f"{label} Hires steps are unsafe: {steps}")
+                require(0.15 <= denoise <= 0.45, f"{label} Hires denoise is unsafe: {denoise}")
+
+
 def audit_data() -> list[str]:
     characters = read_json("data/characters.json")
     day_rules = read_json("data/day_rules.json")
@@ -288,7 +338,8 @@ def audit_assets() -> list[str]:
     require(icon_script.exists(), "Missing tools/make_ui_icons.py")
     for path in ui_icons:
         require(image_size(path) == (128, 128), f"{path} must be 128x128")
-    return ["backgrounds=2@16:9", f"environment_bg={len(environment_backgrounds)}@16:9", f"effects={len(effect_overlays)}@16:9", f"ui_icons={len(ui_icons)}", f"characters={len(characters)}@no-lora", f"cg={len(cgs)}@no-lora-16:9", "door_event_cg=13", "inspection_cg=7", "preprocessor_leaks=none", "lora_weights=safe", "hires_fix=safe", "vae=checkpoint_default", "workflow_safety=required"]
+    assert_generation_workflows_sane()
+    return ["backgrounds=2@16:9", f"environment_bg={len(environment_backgrounds)}@16:9", f"effects={len(effect_overlays)}@16:9", f"ui_icons={len(ui_icons)}", f"characters={len(characters)}@no-lora", f"cg={len(cgs)}@no-lora-16:9", "door_event_cg=13", "inspection_cg=7", "preprocessor_leaks=none", "lora_weights=safe", "hires_fix=safe", "vae=checkpoint_default", "workflow_safety=required", "workflow_templates=safe"]
 
 
 def audit_godot() -> list[str]:
