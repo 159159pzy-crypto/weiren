@@ -29,6 +29,7 @@ class DialogueRequest(BaseModel):
     location: str = "door"
     day: int = Field(ge=1, le=9)
     event_type: str = ""
+    chase_type: str = ""
     known_facts: list[str] = Field(default_factory=list)
     forbidden_facts: list[str] = Field(default_factory=list)
     personality: list[str] = Field(default_factory=list)
@@ -174,7 +175,10 @@ def _fallback_response(request: DialogueRequest) -> DialogueResponse:
             trust_delta = -1
             stress_delta = 4
         elif request.is_being_chased:
-            dialogue = "我知道你会怀疑。那就先开隔离区，别直接开内门。后面的声音真的在靠近。"
+            if request.chase_type == "real_pursued_by_mimic":
+                dialogue = "后面的不是人。它刚才用我的声音叫了一次门，你听见了吗？先开隔离区，开灯，别让我直接进屋。"
+            else:
+                dialogue = "我知道你会怀疑。那就先开隔离区，别直接开内门。后面的声音真的在靠近。"
             emotion = "恐慌"
             action = "她回头看了一眼，声音压低到几乎断掉。"
             trust_delta = -2
@@ -193,7 +197,7 @@ def _fallback_response(request: DialogueRequest) -> DialogueResponse:
             trust_delta = -3
             stress_delta = 1
         else:
-            dialogue = f"我是{short}。如果你需要证据，我可以给你证据。你想听哪一种？"
+            dialogue = "你认得这张脸。外面也认得。你要先救哪一个？" if request.chase_type == "mimic_bait" else f"我是{short}。如果你需要证据，我可以给你证据。你想听哪一种？"
             emotion = "平静"
             action = "她的眼睛没有离开猫眼，呼吸几乎听不见。"
             trust_delta = -2
@@ -206,7 +210,7 @@ def _fallback_response(request: DialogueRequest) -> DialogueResponse:
             trust_delta = -2
             stress_delta = 2
         else:
-            dialogue = "别浪费时间。你越问，外面就越有时间靠近。"
+            dialogue = "你以为后面那个在追我？不，是我们在等你选错开哪一道门。" if request.chase_type == "double_fake" else "别浪费时间。你越问，外面就越有时间靠近。"
             emotion = "催促"
             action = "她用指节轻敲门板，节奏重复得过分整齐。"
             trust_delta = -1

@@ -406,8 +406,10 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing expanded door event token {token}")
     for token in ["正式版说明", "同人免责声明", "LLM / API Key", "发布前检查"]:
         require(token in main, f"Main.gd missing release note token {token}")
-    for token in ["chase_timer", "chase_resolved", "追赶余裕", "追赶超时"]:
+    for token in ["chase_timer", "chase_resolved", "chase_type", "_chase_type_for_visitor", "_chase_type_label", "追赶余裕", "追赶超时"]:
         require(token in main, f"Main.gd missing chase event token {token}")
+    for token in ["real_chased", "fake_chased", "mistaken_chased", "double_fake", "mimic_bait", "real_pursued_by_mimic", "双伪人诱导", "真人被变身怪追"]:
+        require(token in main, f"Main.gd missing chase type token {token}")
     for token in ["missing_ids", "stolen_ids", "inside_human_ids", "身份被盗回归预警", "可盗用外形"]:
         require(token in main, f"Main.gd missing identity theft token {token}")
     for token in ["fake_type", "low", "social", "physical", "emotional", "advanced", "弱生理异常", "线索篡改", "情绪错位", "时间线矛盾"]:
@@ -434,7 +436,7 @@ def audit_godot() -> list[str]:
 
 def audit_backend() -> list[str]:
     backend = (ROOT / "backend/main.py").read_text(encoding="utf-8")
-    for token in ["FastAPI", "sqlite3", "DialogueRequest", "DialogueResponse", "/v1/dialogue", "/v1/session/{session_id}/summary", "source_counts", "clue_hits", "LLM_API_KEY", "emotion", "expression", "trust_delta", "stress_delta", "stamina_cost", "suggested_options"]:
+    for token in ["FastAPI", "sqlite3", "DialogueRequest", "DialogueResponse", "/v1/dialogue", "/v1/session/{session_id}/summary", "source_counts", "clue_hits", "LLM_API_KEY", "emotion", "expression", "trust_delta", "stress_delta", "stamina_cost", "suggested_options", "chase_type"]:
         require(token in backend, f"backend/main.py missing {token}")
     smoke = ROOT / "backend/smoke_test.py"
     require(smoke.exists(), "Missing backend smoke test")

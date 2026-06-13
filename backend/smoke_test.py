@@ -18,6 +18,7 @@ def main() -> None:
         "location": "door",
         "day": 2,
         "event_type": "visitor_panic",
+        "chase_type": "fake_chased",
         "known_facts": ["红虹膜"],
         "forbidden_facts": ["不要改变身份真相"],
         "personality": ["话多、紧张"],

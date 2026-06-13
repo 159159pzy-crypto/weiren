@@ -885,6 +885,8 @@ func _generate_visitors() -> void:
 			event = _door_event_by_id("visitor_chased")
 		if day >= 4 and roles[i] == "human" and rng.randf() < 0.18 + danger_chase_bonus / 2.0:
 			event = _door_event_by_id("mistaken_chased")
+		if day >= 4 and roles[i] != "human" and rng.randf() < 0.18 + danger_chase_bonus / 2.0:
+			event = _door_event_by_id("visitor_chased")
 		if day >= 5 and roles[i] != "human" and rng.randf() < 0.24:
 			event = _door_event_by_id("visitor_duplicate")
 		if day >= 5 and roles[i] != "human" and rng.randf() < 0.18:
@@ -892,15 +894,17 @@ func _generate_visitors() -> void:
 		if day >= 4 and roles[i] != "human" and rng.randf() < 0.16:
 			event = _door_event_by_id("visitor_childlike")
 		var fake_type := _fake_type_for_day(day) if roles[i] == "fake" else ""
+		var chase_type := _chase_type_for_visitor(roles[i], event, day)
 		var visitor: Dictionary = {
 			"character": character,
 			"role": roles[i],
 			"fake_type": fake_type,
 			"event": event,
+			"chase_type": chase_type,
 			"evidence": _make_evidence(character, roles[i], event, day, fake_type),
 			"discovered": [],
 			"asked": 0,
-			"chase_timer": rng.randi_range(3, 5) if bool(event.get("chased", false)) else -1,
+			"chase_timer": rng.randi_range(3, 5) if chase_type != "" else -1,
 			"chase_resolved": false,
 			"stress": rng.randi_range(35, 85),
 			"decided": false
@@ -918,6 +922,19 @@ func _fake_type_for_day(day: int) -> String:
 	if day >= 6:
 		candidates.append("advanced")
 	return str(candidates[rng.randi_range(0, candidates.size() - 1)])
+
+
+func _chase_type_for_visitor(role: String, event: Dictionary, day: int) -> String:
+	var event_id := str(event.get("id", ""))
+	if event_id == "mistaken_chased":
+		return "mistaken_chased"
+	if event_id != "visitor_chased":
+		return ""
+	if role == "human":
+		return "real_pursued_by_mimic" if day >= 6 and rng.randi_range(1, 100) <= 35 else "real_chased"
+	if role == "fake":
+		return "double_fake" if day >= 6 and rng.randi_range(1, 100) <= 35 else "fake_chased"
+	return "mimic_bait"
 
 
 func _make_evidence(character: Dictionary, role: String, event: Dictionary, day: int, fake_type := "") -> Array:
@@ -1076,8 +1093,8 @@ func _show_current_visitor() -> void:
 	subtitle_label.text = character.get("name", "") + " / " + event.get("name", "")
 	event_label.text = "[color=#ffc878]" + event.get("name", "") + "[/color]\n" + event.get("hint", "")
 	var intro := _visitor_intro(visitor)
-	if bool(event.get("chased", false)) and int(visitor.get("chase_timer", -1)) >= 0:
-		intro += "\n\n[color=#ff8f8f]追赶余裕：" + str(visitor.get("chase_timer", 0)) + "。每次盘问或检查都会让门外脚步更近。[/color]"
+	if _visitor_has_chase_pressure(visitor):
+		intro += "\n\n[color=#ff8f8f]追赶余裕：" + str(visitor.get("chase_timer", 0)) + " / " + _chase_type_label(str(visitor.get("chase_type", ""))) + "。每次盘问或检查都会让门外脚步更近。[/color]"
 	narrative.text = intro + "\n\n[color=#9ef0dc]已发现线索：" + str(visitor["discovered"].size()) + "/" + str(visitor["evidence"].size()) + "[/color]\n" + _visitor_clue_text(visitor)
 	_update_panels()
 	_clear_actions()
@@ -1183,8 +1200,30 @@ func _visitor_clue_text(visitor: Dictionary) -> String:
 	return "\n" + "\n".join(lines)
 
 
+func _visitor_has_chase_pressure(visitor: Dictionary) -> bool:
+	return str(visitor.get("chase_type", "")) != "" and !bool(visitor.get("chase_resolved", false)) and int(visitor.get("chase_timer", -1)) >= 0
+
+
+func _chase_type_label(chase_type: String) -> String:
+	match chase_type:
+		"real_chased":
+			return "真人被追赶"
+		"fake_chased":
+			return "伪人假装被追"
+		"mistaken_chased":
+			return "误判追赶"
+		"double_fake":
+			return "双伪人诱导"
+		"mimic_bait":
+			return "变身怪熟人脸求救"
+		"real_pursued_by_mimic":
+			return "真人被变身怪追"
+		_:
+			return "追赶事件"
+
+
 func _advance_chase(visitor: Dictionary, amount: int, reason: String) -> bool:
-	if !bool(visitor.get("event", {}).get("chased", false)) or bool(visitor.get("chase_resolved", false)):
+	if !_visitor_has_chase_pressure(visitor):
 		return false
 	visitor["chase_timer"] = int(visitor.get("chase_timer", 0)) - amount
 	if int(visitor["chase_timer"]) > 0:
@@ -1196,9 +1235,15 @@ func _advance_chase(visitor: Dictionary, amount: int, reason: String) -> bool:
 
 func _resolve_chase_timeout(visitor: Dictionary) -> void:
 	var character: Dictionary = visitor["character"]
+	var chase_type := str(visitor.get("chase_type", ""))
 	visitor["chase_resolved"] = true
 	visitor["decided"] = true
-	if visitor["role"] == "human":
+	if chase_type == "mistaken_chased":
+		state["trust"] = maxi(0, int(state["trust"]) - 8)
+		state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 6)
+		_adjust_character_relation(character, -14, 20, "误判追赶拖延")
+		_log("追赶超时：" + character.get("short", "她") + "的恐惧被你拖成崩溃。没有东西冲出来，但屋内信任裂开了。")
+	elif chase_type == "real_chased":
 		state["missing"] += 1
 		state["stolen"] += 1
 		_record_missing_identity(character, true)
@@ -1206,6 +1251,24 @@ func _resolve_chase_timeout(visitor: Dictionary) -> void:
 		state["trust"] = maxi(0, int(state["trust"]) - 10)
 		state["outside_danger"] = mini(100, int(state["outside_danger"]) + 8)
 		_log("追赶超时：真正的" + character.get("short", "她") + "在猫眼外失踪，身份进入可盗用池。")
+	elif chase_type == "real_pursued_by_mimic":
+		state["missing"] += 1
+		state["stolen"] += 1
+		_record_missing_identity(character, true)
+		state["abandonment"] = mini(10, int(state["abandonment"]) + 3)
+		state["outside_danger"] = mini(100, int(state["outside_danger"]) + 12)
+		state["mimic_learning"] = mini(100, int(state.get("mimic_learning", 0)) + 10)
+		_log("追赶超时：真人被变身怪在门外替换。它带走了声线、步幅和求救节奏。")
+	elif chase_type == "double_fake":
+		state["outside_danger"] = mini(100, int(state["outside_danger"]) + 9)
+		state["contamination"] = mini(100, int(state["contamination"]) + 6)
+		state["mimic_learning"] = mini(100, int(state.get("mimic_learning", 0)) + 7)
+		_log("追赶超时：求救者和追赶者同时停下。双伪人诱导失败，却学会了你的拖延节奏。")
+	elif chase_type == "mimic_bait":
+		state["outside_danger"] = mini(100, int(state["outside_danger"]) + 8)
+		state["mimic_learning"] = mini(100, int(state.get("mimic_learning", 0)) + 12)
+		state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 4)
+		_log("追赶超时：变身怪收起熟人的脸。它没有进门，却记住了你会问什么。")
 	else:
 		state["outside_danger"] = mini(100, int(state["outside_danger"]) + 6)
 		state["mimic_learning"] = mini(100, int(state["mimic_learning"]) + 5)
@@ -1265,13 +1328,14 @@ func _request_backend_dialogue(visitor: Dictionary, question: String, clue: Dict
 		"location": "door",
 		"day": int(state.get("day", 1)),
 		"event_type": event.get("id", ""),
+		"chase_type": str(visitor.get("chase_type", "")),
 		"known_facts": visitor["discovered"].map(func(item): return item.get("title", "")),
 		"forbidden_facts": ["不要改变身份真相", "不要决定生死", "不要创造新证据"],
 		"personality": [character.get("tone", ""), character.get("normal", "")],
 		"speech_style": character.get("tone", ""),
 		"stress": int(visitor.get("stress", 50)),
 		"trust": int(state.get("trust", 50)),
-		"is_being_chased": bool(event.get("chased", false)),
+		"is_being_chased": _visitor_has_chase_pressure(visitor),
 		"player_message": question,
 		"candidate_clue": clue if !clue.is_empty() else null
 	}
