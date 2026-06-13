@@ -163,7 +163,7 @@ def audit_data() -> list[str]:
 def audit_assets() -> list[str]:
     cg_manifest = read_json("data/cg_manifest.json")
     cg_entries = cg_manifest.get("entries", [])
-    require(len(cg_entries) >= 32, "Expected at least 32 CG manifest entries")
+    require(len(cg_entries) >= 39, "Expected at least 39 CG manifest entries")
     cg_assets = [entry["asset"] for entry in cg_entries]
     roles = {entry.get("role", "") for entry in cg_entries}
     triggers = {entry.get("trigger", "") for entry in cg_entries}
@@ -172,8 +172,8 @@ def audit_assets() -> list[str]:
         require(trigger in triggers, f"CG manifest missing sleep trigger {trigger}")
     for trigger in ["true", "good", "neutral", "no_one", "perfect_band", "purple", "identity", "door", "hidden", "distortion"]:
         require(trigger in triggers, f"CG manifest missing ending trigger {trigger}")
-    for trigger in ["visitor_asks_someone", "visitor_childlike", "mistaken_chased"]:
-        require(trigger in triggers, f"CG manifest missing expanded door trigger {trigger}")
+    for trigger in ["visitor_calm", "visitor_panic", "visitor_chased", "visitor_injured", "visitor_supplies", "visitor_knows_inside", "visitor_wrong_code", "visitor_duplicate", "visitor_silent", "visitor_fake_radio", "visitor_asks_someone", "visitor_childlike", "mistaken_chased"]:
+        require(trigger in triggers, f"CG manifest missing door event trigger {trigger}")
     for trigger in ["teeth", "iris", "finger", "breath_shadow", "footprint", "environment", "room_search"]:
         require(trigger in triggers, f"CG manifest missing inspection trigger {trigger}")
     backgrounds = [
@@ -215,7 +215,7 @@ def audit_assets() -> list[str]:
     for path in characters + backgrounds + source_assets:
         assert_hires_sane(path)
     assert_sidecar_contains("assets/generated/cg_another_rikki_hui_16x9.asset-plan.json", "hui-derived-16x9-adapter")
-    return ["backgrounds=2@16:9", "characters=4@no-lora", f"cg={len(cgs)}@no-lora-16:9", "inspection_cg=7", "preprocessor_leaks=none", "vae=checkpoint_default"]
+    return ["backgrounds=2@16:9", "characters=4@no-lora", f"cg={len(cgs)}@no-lora-16:9", "door_event_cg=13", "inspection_cg=7", "preprocessor_leaks=none", "vae=checkpoint_default"]
 
 
 def audit_godot() -> list[str]:
@@ -274,7 +274,7 @@ def audit_godot() -> list[str]:
         "_request_backend_dialogue",
     ]:
         require(token in main, f"Main.gd missing {token}")
-    for token in ["cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_inspect_teeth_16x9.png", "cg_inspect_room_search_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
+    for token in ["cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_calm_16x9.png", "cg_door_panic_16x9.png", "cg_door_injured_16x9.png", "cg_door_knows_inside_16x9.png", "cg_door_wrong_code_16x9.png", "cg_door_silent_16x9.png", "cg_door_fake_radio_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_inspect_teeth_16x9.png", "cg_inspect_room_search_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
         require(token in main, f"Main.gd missing CG mapping {token}")
     for stale in ["char_human_visitor_hui.png", "char_mimic_visitor_hui.png", "char_another_rikki_hui.png"]:
         require(stale not in main, f"Main.gd still references old character asset {stale}")

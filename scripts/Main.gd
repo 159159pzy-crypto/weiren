@@ -27,9 +27,16 @@ const SLEEP_CG := {
 }
 
 const DOOR_EVENT_CG := {
+	"visitor_calm": "res://assets/generated/cg_door_calm_16x9.png",
+	"visitor_panic": "res://assets/generated/cg_door_panic_16x9.png",
 	"visitor_chased": "res://assets/generated/cg_door_chased_16x9.png",
+	"visitor_injured": "res://assets/generated/cg_door_injured_16x9.png",
 	"visitor_duplicate": "res://assets/generated/cg_door_duplicate_16x9.png",
 	"visitor_supplies": "res://assets/generated/cg_door_supplies_16x9.png",
+	"visitor_knows_inside": "res://assets/generated/cg_door_knows_inside_16x9.png",
+	"visitor_wrong_code": "res://assets/generated/cg_door_wrong_code_16x9.png",
+	"visitor_silent": "res://assets/generated/cg_door_silent_16x9.png",
+	"visitor_fake_radio": "res://assets/generated/cg_door_fake_radio_16x9.png",
 	"visitor_asks_someone": "res://assets/generated/cg_door_asks_someone_16x9.png",
 	"visitor_childlike": "res://assets/generated/cg_door_childlike_16x9.png",
 	"mistaken_chased": "res://assets/generated/cg_door_mistaken_chased_16x9.png",

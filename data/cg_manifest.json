@@ -96,10 +96,37 @@
       "loras": []
     },
     {
+      "id": "cg_door_calm_16x9",
+      "role": "door_event",
+      "trigger": "visitor_calm",
+      "asset": "assets/generated/cg_door_calm_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_panic_16x9",
+      "role": "door_event",
+      "trigger": "visitor_panic",
+      "asset": "assets/generated/cg_door_panic_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
       "id": "cg_door_chased_16x9",
       "role": "door_event",
       "trigger": "visitor_chased",
       "asset": "assets/generated/cg_door_chased_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_injured_16x9",
+      "role": "door_event",
+      "trigger": "visitor_injured",
+      "asset": "assets/generated/cg_door_injured_16x9.png",
       "source": "assets/generated/bg_peephole_hallway_16x9.png",
       "derived": true,
       "loras": []
@@ -118,6 +145,42 @@
       "role": "door_event",
       "trigger": "visitor_supplies",
       "asset": "assets/generated/cg_door_supplies_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_knows_inside_16x9",
+      "role": "door_event",
+      "trigger": "visitor_knows_inside",
+      "asset": "assets/generated/cg_door_knows_inside_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_wrong_code_16x9",
+      "role": "door_event",
+      "trigger": "visitor_wrong_code",
+      "asset": "assets/generated/cg_door_wrong_code_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_silent_16x9",
+      "role": "door_event",
+      "trigger": "visitor_silent",
+      "asset": "assets/generated/cg_door_silent_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_fake_radio_16x9",
+      "role": "door_event",
+      "trigger": "visitor_fake_radio",
+      "asset": "assets/generated/cg_door_fake_radio_16x9.png",
       "source": "assets/generated/bg_peephole_hallway_16x9.png",
       "derived": true,
       "loras": []
