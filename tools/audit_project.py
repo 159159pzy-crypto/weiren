@@ -204,6 +204,7 @@ def audit_godot() -> list[str]:
         "_prep_set_code",
         "_prep_select_detector",
         "_prep_distribute_supplies",
+        "entering_new_day",
         "_prep_accept_self_check",
         "_prep_refuse_self_check",
         "_apply_self_suspicion_pressure",
@@ -213,6 +214,10 @@ def audit_godot() -> list[str]:
         "_record_missing_identity",
         "_pick_stolen_identity",
         "_steal_random_inside_identity",
+        "_initialize_relationships",
+        "_adjust_character_relation",
+        "_apply_relationship_pressure",
+        "_relationship_summary",
         "_indoor_free_talk",
         "_indoor_memory_check",
         "_indoor_face_check",
@@ -245,6 +250,8 @@ def audit_godot() -> list[str]:
         require(label in main, f"Main.gd missing indoor investigation action {label}")
     for token in ["room_searches_left", "cross_questions_left", "交叉证词", "线索污染"]:
         require(token in main, f"Main.gd missing expanded indoor investigation token {token}")
+    for token in ["character_trust", "character_stress", "guarded_id", "屋内关系", "黎明关系结算"]:
+        require(token in main, f"Main.gd missing relationship system token {token}")
     for token in ["chase_timer", "chase_resolved", "追赶余裕", "追赶超时"]:
         require(token in main, f"Main.gd missing chase event token {token}")
     for token in ["missing_ids", "stolen_ids", "inside_human_ids", "身份被盗回归预警", "可盗用外形"]:

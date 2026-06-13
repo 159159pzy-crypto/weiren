@@ -360,9 +360,12 @@ func _start_new_game() -> void:
 		"stolen": 0,
 		"missing_ids": [],
 		"stolen_ids": [],
+		"character_trust": {},
+		"character_stress": {},
 		"gun_charges": 0,
 		"refusal_streak": 0,
 		"guarded": false,
+		"guarded_id": "",
 		"code_phrase": "",
 		"detector_focus": "none",
 		"rooms_assigned": false,
@@ -373,6 +376,7 @@ func _start_new_game() -> void:
 		"log": [],
 		"evidence": []
 	}
+	_initialize_relationships()
 	final_mimic_identified = false
 	final_mimic_mishandled = false
 	_log("随机种子：" + str(current_seed))
@@ -380,20 +384,23 @@ func _start_new_game() -> void:
 
 
 func _begin_day() -> void:
+	var entering_new_day := current_phase != "prep"
 	current_phase = "prep"
 	_hide_character_portrait()
-	state["quarantine_used"] = 0
-	state["guarded"] = false
-	state["detector_focus"] = "none"
-	state["rooms_assigned"] = false
-	state["supplies_distributed"] = false
-	state["room_search_bonus"] = 0
-	state["room_searches_left"] = 1 + (1 if int(state["day"]) >= 5 else 0)
-	state["cross_questions_left"] = 1 + (1 if int(state["day"]) >= 6 else 0)
-	_apply_self_suspicion_pressure()
-	_apply_rule_distortion_pressure()
-	_refresh_gun_charges()
-	_generate_visitors()
+	if entering_new_day:
+		state["quarantine_used"] = 0
+		state["guarded"] = false
+		state["guarded_id"] = ""
+		state["detector_focus"] = "none"
+		state["rooms_assigned"] = false
+		state["supplies_distributed"] = false
+		state["room_search_bonus"] = 0
+		state["room_searches_left"] = 1 + (1 if int(state["day"]) >= 5 else 0)
+		state["cross_questions_left"] = 1 + (1 if int(state["day"]) >= 6 else 0)
+		_apply_self_suspicion_pressure()
+		_apply_rule_distortion_pressure()
+		_refresh_gun_charges()
+		_generate_visitors()
 	_set_background(BG_ROOM)
 	var rule := _rule_for_day(state["day"])
 	title_label.text = "第 " + str(state["day"]) + " 夜"
@@ -481,6 +488,8 @@ func _prep_distribute_supplies() -> void:
 	state["supplies_distributed"] = true
 	state["trust"] = mini(100, state["trust"] + 8)
 	state["stamina"] = mini(state["stamina_max"], state["stamina"] + 6)
+	for id in _inside_character_ids():
+		_adjust_character_relation(_character_by_id(str(id)), 3, -6, "提前分配物资")
 	_log("提前分配物资。有人终于愿意相信今晚不是只靠怀疑活下去。")
 	_begin_day()
 
@@ -565,7 +574,14 @@ func _prep_set_guard() -> void:
 	state["supplies"] -= 8
 	state["trust"] = maxi(0, state["trust"] - 2)
 	state["guarded"] = true
-	_log("安排守夜。你会睡得更稳，但屋内压力上升。")
+	var guard_id := _pick_inside_character_id(true)
+	state["guarded_id"] = guard_id
+	if guard_id.is_empty():
+		_log("安排守夜。你会睡得更稳，但屋内压力上升。")
+	else:
+		var guard_character := _character_by_id(guard_id)
+		_adjust_character_relation(guard_character, -2, 16, "守夜")
+		_log("安排" + guard_character.get("short", "某人") + "守夜。你会睡得更稳，但她的压力上升。")
 	_begin_day()
 
 
@@ -1171,8 +1187,10 @@ func _apply_admit(visitor: Dictionary, clue_score: int) -> void:
 		state["humans_inside"] += 1
 		_record_inside_human(character)
 		state["trust"] = mini(100, state["trust"] + 4)
+		_adjust_character_relation(character, 10, -8, "被救入屋内")
 		if visitor["event"].get("id", "") == "visitor_supplies":
 			state["supplies"] = mini(100, state["supplies"] + 18)
+			_adjust_character_relation(character, 3, -4, "物资被确认")
 		if visitor["event"].get("chased", false):
 			state["outside_danger"] = mini(100, int(state["outside_danger"]) + 5)
 			state["door"] = maxi(0, int(state["door"]) - 4)
@@ -1183,11 +1201,13 @@ func _apply_admit(visitor: Dictionary, clue_score: int) -> void:
 		state["fakes_inside"] += 1
 		state["contamination"] = mini(100, state["contamination"] + 12)
 		state["trust"] = maxi(0, state["trust"] - 9)
+		_adjust_character_relation(character, -8, 10, "同名伪人入屋")
 		_log("你放入了伪装成" + character.get("short", "") + "的伪人。屋内空气变冷。")
 	else:
 		state["mimics_inside"] += 1
 		state["contamination"] = mini(100, state["contamination"] + 20)
 		state["mimic_learning"] = mini(100, state["mimic_learning"] + 12)
+		_adjust_character_relation(character, -10, 14, "变身怪借用外形入屋")
 		if character.get("id", "") == "taki_fake":
 			final_mimic_mishandled = true
 		_log("变身怪被放入屋内。它开始学习每个人的站姿。")
@@ -1201,6 +1221,7 @@ func _apply_quarantine(visitor: Dictionary, clue_score: int) -> void:
 		state["humans_inside"] += 1
 		_record_inside_human(character)
 		state["trust"] = mini(100, state["trust"] + (4 if visitor["event"].get("chased", false) else 1))
+		_adjust_character_relation(character, 5, 6 if visitor["event"].get("chased", false) else 10, "被隔离收容")
 		var wear := rng.randi_range(8, 14) if visitor["event"].get("chased", false) else rng.randi_range(4, 10)
 		state["quarantine"] = maxi(0, state["quarantine"] - wear)
 		if visitor["event"].get("chased", false):
@@ -1234,6 +1255,10 @@ func _apply_reject(visitor: Dictionary, clue_score: int) -> void:
 		_record_missing_identity(character, false)
 		state["abandonment"] = mini(10, state["abandonment"] + (2 if visitor["event"].get("chased", false) else 1))
 		state["trust"] = maxi(0, state["trust"] - 8)
+		_adjust_character_relation(character, -24, 30, "被拒之门外")
+		if visitor["event"].get("id", "") == "visitor_supplies":
+			state["supplies"] = maxi(0, int(state["supplies"]) - 8)
+			_log("拒绝携带物资的真人，明天的补给缺口更明显。")
 		if rng.randi_range(1, 100) <= 45 + int(state["outside_danger"]):
 			state["stolen"] += 1
 			_record_missing_identity(character, true)
@@ -1243,6 +1268,7 @@ func _apply_reject(visitor: Dictionary, clue_score: int) -> void:
 	elif role == "fake":
 		state["outside_danger"] = mini(100, state["outside_danger"] + 2)
 		state["trust"] = mini(100, state["trust"] + 2)
+		_adjust_character_relation(character, 2, -2, "同名伪人被挡在门外")
 		_log("伪人被留在门外。门板另一侧传来很轻的笑声。")
 	else:
 		state["outside_danger"] = mini(100, state["outside_danger"] + 5)
@@ -1266,10 +1292,12 @@ func _apply_gun(visitor: Dictionary, clue_score: int) -> void:
 		state["abandonment"] = mini(10, state["abandonment"] + 3)
 		state["trust"] = maxi(0, state["trust"] - 18)
 		state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 18)
+		_adjust_character_relation(character, -35, 40, "驱逐装置误伤")
 		_log("驱逐装置误伤了真正的" + character.get("short", "") + "。海铃什么也没说。")
 	elif role == "human":
 		state["trust"] = maxi(0, state["trust"] - 10)
 		state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 8)
+		_adjust_character_relation(character, -18, 24, "被强制驱离")
 		_log(character.get("short", "") + "被强制驱离。她也许是真的，但你没有留下余地。")
 	else:
 		state["contamination"] = maxi(0, state["contamination"] - 4)
@@ -1308,6 +1336,8 @@ func _indoor_free_talk() -> void:
 	if int(state["humans_inside"]) > 0:
 		state["trust"] = mini(100, int(state["trust"]) + 2)
 		state["evidence_integrity"] = mini(100, int(state["evidence_integrity"]) + 3)
+		for id in _inside_character_ids():
+			_adjust_character_relation(_character_by_id(str(id)), 1, -2, "室内自由对话")
 		_log("你让屋内的人轮流说话。真人的停顿互相接上，线索板多了一点温度。")
 	else:
 		state["mimic_learning"] = mini(100, int(state["mimic_learning"]) + 4)
@@ -1445,6 +1475,8 @@ func _cross_question() -> void:
 		var learning_gain := 7 if int(state["evidence_integrity"]) < 45 else 4
 		state["mimic_learning"] = mini(100, state["mimic_learning"] + learning_gain)
 		state["trust"] = maxi(0, state["trust"] - (5 if int(state["evidence_integrity"]) < 45 else 3))
+		for id in _inside_character_ids():
+			_adjust_character_relation(_character_by_id(str(id)), -2, 5 if int(state["evidence_integrity"]) < 45 else 3, "交叉质问失败")
 		_log("交叉质问没有结论。" + ("线索污染太重，伪人反而学到了更多答案。" if int(state["evidence_integrity"]) < 45 else "大家更紧张，伪人也学到更多回答。"))
 	_show_investigation()
 
@@ -1468,7 +1500,13 @@ func _soyo_care() -> void:
 	state["supplies"] -= 6
 	state["trust"] = mini(100, state["trust"] + 6)
 	state["stamina"] = mini(state["stamina_max"], state["stamina"] + 8)
-	_log("爽世把水和药分好。温柔本身也可能是一种秩序。")
+	var cared_id := _most_stressed_inside_id()
+	if cared_id.is_empty():
+		_log("爽世把水和药分好。温柔本身也可能是一种秩序。")
+	else:
+		var cared_character := _character_by_id(cared_id)
+		_adjust_character_relation(cared_character, 4, -18, "爽世照顾")
+		_log("爽世把水和药分给" + cared_character.get("short", "某人") + "。温柔本身也可能是一种秩序。")
 	_show_investigation()
 
 
@@ -1583,8 +1621,11 @@ func _resolve_sleep_event(events: Array, index: int, choice: String) -> void:
 		var trust_cost := 1 if bool(state.get("supplies_distributed", false)) else 3
 		state["trust"] = maxi(0, state["trust"] - trust_cost)
 		if state["humans_inside"] > 0:
+			var helper_id := _pick_inside_character_id(true)
+			if !helper_id.is_empty():
+				_adjust_character_relation(_character_by_id(helper_id), -trust_cost, 8, "夜间被叫醒")
 			state["contamination"] = maxi(0, state["contamination"] - 1)
-			_log("有人陪你查看，恐惧被分摊了一点。" + ("提前分配的物资让大家少了些怨气。" if trust_cost == 1 else ""))
+			_log(_character_by_id(helper_id).get("short", "有人") + "陪你查看，恐惧被分摊了一点。" + ("提前分配的物资让大家少了些怨气。" if trust_cost == 1 else ""))
 		else:
 			state["mimic_learning"] = mini(100, state["mimic_learning"] + 5)
 			_log("你叫来的声音不太像你记得的那个人。")
@@ -1597,6 +1638,29 @@ func _resolve_sleep_event(events: Array, index: int, choice: String) -> void:
 			state["contamination"] = mini(100, state["contamination"] + 3)
 		_log("你选择装睡。早上醒来时，屋里有东西变了。")
 	_show_sleep_event(events, index + 1)
+
+
+func _apply_relationship_pressure() -> void:
+	var ids := _inside_character_ids()
+	if ids.is_empty():
+		return
+	var high_pressure := 0
+	for id in ids:
+		var character := _character_by_id(str(id))
+		var stress := int(state.get("character_stress", {}).get(id, 10))
+		var trust_value := int(state.get("character_trust", {}).get(id, 50))
+		if bool(state.get("supplies_distributed", false)):
+			_adjust_character_relation(character, 1, -3, "黎明物资缓冲")
+		if bool(state.get("guarded", false)) and str(state.get("guarded_id", "")) == str(id):
+			_adjust_character_relation(character, -1, 4, "守夜后的疲劳")
+		if stress >= 80:
+			high_pressure += 1
+			state["trust"] = maxi(0, int(state["trust"]) - 2)
+			state["evidence_integrity"] = maxi(0, int(state["evidence_integrity"]) - 1)
+			if trust_value <= 20:
+				state["self_suspicion"] = mini(100, int(state.get("self_suspicion", 0)) + 2)
+	if high_pressure > 0:
+		_log("黎明关系结算：" + str(high_pressure) + " 名屋内成员压力过高，信任和线索可信受到影响。")
 
 
 func _dawn_settlement(_events: Array) -> void:
@@ -1617,6 +1681,7 @@ func _dawn_settlement(_events: Array) -> void:
 			state["stolen"] += 1
 			_steal_random_inside_identity()
 			_log("黎明前有人失踪，身份被盗用池扩大。")
+	_apply_relationship_pressure()
 	var food_cost := 8 + int(state["humans_inside"]) * 2
 	state["supplies"] = maxi(0, state["supplies"] - food_cost)
 	if state["supplies"] < 25:
@@ -1766,6 +1831,7 @@ func _update_panels() -> void:
 	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"
 	status += "物资分配：" + ("已完成" if bool(state.get("supplies_distributed", false)) else "未完成") + "\n"
 	status += "房间搜查：" + str(state.get("room_searches_left", 0)) + " / 交叉证词：" + str(state.get("cross_questions_left", 0)) + "\n"
+	status += _relationship_summary()
 	stats_label.text = status
 	var board := "[color=#ffc878]最近记录[/color]\n" + _recent_lines(state["log"], 10)
 	board += "\n\n[color=#9ef0dc]证据[/color]\n" + _recent_lines(state["evidence"], 12)
@@ -1843,6 +1909,91 @@ func _character_by_id(id: String) -> Dictionary:
 		if c.get("id", "") == id:
 			return c
 	return characters[0] if !characters.is_empty() else {}
+
+
+func _initialize_relationships() -> void:
+	state["character_trust"] = {}
+	state["character_stress"] = {}
+	for character in characters:
+		var id := str(character.get("id", ""))
+		if id.is_empty() or id == "taki_fake":
+			continue
+		state["character_trust"][id] = 50
+		state["character_stress"][id] = 10
+
+
+func _adjust_character_relation(character: Dictionary, trust_delta: int, stress_delta: int, reason := "") -> void:
+	var id := str(character.get("id", ""))
+	if id.is_empty() or id == "taki_fake":
+		return
+	if !state.get("character_trust", {}).has(id):
+		state["character_trust"][id] = 50
+	if !state.get("character_stress", {}).has(id):
+		state["character_stress"][id] = 10
+	var next_trust := clampi(int(state["character_trust"][id]) + trust_delta, 0, 100)
+	var next_stress := clampi(int(state["character_stress"][id]) + stress_delta, 0, 100)
+	state["character_trust"][id] = next_trust
+	state["character_stress"][id] = next_stress
+	if next_stress >= 85:
+		state["trust"] = maxi(0, int(state["trust"]) - 1)
+		if !reason.is_empty():
+			_log(character.get("short", "某人") + "压力接近崩溃：" + reason)
+
+
+func _inside_character_ids() -> Array:
+	var ids: Array = []
+	for id in state.get("inside_human_ids", []):
+		if !(id in ids):
+			ids.append(id)
+	return ids
+
+
+func _pick_inside_character_id(prefer_low_stress := false) -> String:
+	var ids := _inside_character_ids()
+	if ids.is_empty():
+		return ""
+	if !prefer_low_stress:
+		return str(ids[rng.randi_range(0, ids.size() - 1)])
+	var best_id := str(ids[0])
+	var best_score := 999
+	for id in ids:
+		var score := int(state.get("character_stress", {}).get(id, 10)) - int(state.get("character_trust", {}).get(id, 50)) / 4
+		if score < best_score:
+			best_score = score
+			best_id = str(id)
+	return best_id
+
+
+func _most_stressed_inside_id() -> String:
+	var ids := _inside_character_ids()
+	if ids.is_empty():
+		return ""
+	var worst_id := str(ids[0])
+	var worst_stress := -1
+	for id in ids:
+		var stress := int(state.get("character_stress", {}).get(id, 10))
+		if stress > worst_stress:
+			worst_stress = stress
+			worst_id = str(id)
+	return worst_id
+
+
+func _relationship_summary() -> String:
+	var ids := _inside_character_ids()
+	if ids.is_empty():
+		return "屋内关系：无\n"
+	var rows := []
+	for id in ids:
+		var character := _character_by_id(str(id))
+		rows.append({
+			"text": character.get("short", str(id)) + " 信" + str(state.get("character_trust", {}).get(id, 50)) + "/压" + str(state.get("character_stress", {}).get(id, 10)),
+			"stress": int(state.get("character_stress", {}).get(id, 10)),
+		})
+	rows.sort_custom(func(a, b): return int(a["stress"]) > int(b["stress"]))
+	var text := "屋内关系："
+	for i in range(mini(3, rows.size())):
+		text += (" / " if i > 0 else "") + str(rows[i]["text"])
+	return text + "\n"
 
 
 func _door_event_by_id(id: String) -> Dictionary:

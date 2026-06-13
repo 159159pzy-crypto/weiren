@@ -6,6 +6,15 @@ func _initialize() -> void:
 	await process_frame
 	scene.seed_input.text = "smoke-test"
 	scene._start_new_game()
+	if !scene.state.has("character_trust") or !scene.state.has("character_stress"):
+		push_error("Relationship maps were not initialized")
+		quit(1)
+		return
+	scene._prep_assign_rooms()
+	if !bool(scene.state.get("rooms_assigned", false)):
+		push_error("Prep state did not persist after assigning rooms")
+		quit(1)
+		return
 	scene._start_visitors()
 	await process_frame
 	if scene.question_input != null:
