@@ -58,6 +58,7 @@ python tools/audit_project.py
 godot --headless --path D:\game --quit-after 1
 godot --headless --path D:\game --script res://scripts/SmokeTest.gd
 godot --headless --path D:\game --script res://scripts/FullRunAudit.gd
+godot --headless --path D:\game --script res://scripts/BalanceAudit.gd
 python -m backend.smoke_test
 ```
 

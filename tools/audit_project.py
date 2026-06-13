@@ -86,6 +86,27 @@ def assert_vae_sane(path: str) -> None:
         require(token not in text, f"{path} may reference a mismatched external VAE: {token}")
 
 
+def assert_workflow_safety_sane(path: str) -> None:
+    sidecar = sidecar_json_for_asset(path)
+    workflow_safety = sidecar.get("workflow_safety", {})
+    require(isinstance(workflow_safety, dict), f"{path} workflow_safety must be an object when present")
+    active_loras = workflow_safety.get("active_loras", [])
+    require(active_loras in (None, []), f"{path} workflow_safety reports active LoRA: {active_loras}")
+    preprocessor_nodes = workflow_safety.get("controlnet_preprocessor_nodes", [])
+    suspicious_nodes = workflow_safety.get("suspicious_preprocessor_nodes", [])
+    require(preprocessor_nodes in (None, []), f"{path} workflow_safety reports ControlNet/preprocessor nodes: {preprocessor_nodes}")
+    require(suspicious_nodes in (None, []), f"{path} workflow_safety reports suspicious preprocessor nodes: {suspicious_nodes}")
+    vae_policy = str(workflow_safety.get("vae_policy", sidecar.get("vae", "checkpoint_default"))).lower()
+    require(vae_policy in {"", "checkpoint_default", "embedded", "model_default", "checkpoint_default from source generation"}, f"{path} workflow_safety has unexpected VAE policy: {vae_policy}")
+
+    # Derived CGs do not rerun Hires Fix; source txt2img assets must keep direct numeric params sane.
+    hires_note = str(workflow_safety.get("hires_fix", "")).lower()
+    if "not rerun" in hires_note:
+        return
+    if any(key in sidecar for key in ["hires_scale", "hires_denoise", "hires_steps"]):
+        assert_hires_sane(path)
+
+
 def assert_no_preprocessor_leaks() -> None:
     banned = ["controlnet", "preprocess", "preprocessor", "canny", "depth", "openpose", "lineart", "scribble", "softedge"]
     for path in (ROOT / "assets/generated").iterdir():
@@ -128,7 +149,8 @@ def audit_data() -> list[str]:
     require(len(events.get("sleep_events", [])) >= 9, "Expected at least 9 sleep events")
     require("同人" in release_config.get("disclaimer", ""), "Release config must include fan disclaimer")
     require("LLM_API_KEY" in release_config.get("llm", {}).get("required_when_enabled", []), "Release config must document LLM_API_KEY")
-    require(len(release_config.get("release_checks", [])) >= 5, "Release config must list release checks")
+    require(len(release_config.get("release_checks", [])) >= 6, "Release config must list release checks")
+    require(any("BalanceAudit.gd" in check for check in release_config.get("release_checks", [])), "Release config must include balance audit")
     return [
         f"characters={len(characters)}",
         "day_rules=1-9",
@@ -186,6 +208,7 @@ def audit_assets() -> list[str]:
         assert_no_loras(path)
         assert_lora_weights_sane(path)
         assert_vae_sane(path)
+        assert_workflow_safety_sane(path)
         assert_no_input_image_leaks(path)
     for path in characters + backgrounds + source_assets:
         assert_hires_sane(path)
@@ -197,6 +220,11 @@ def audit_godot() -> list[str]:
     project = (ROOT / "project.godot").read_text(encoding="utf-8")
     main = (ROOT / "scripts/Main.gd").read_text(encoding="utf-8")
     scene = (ROOT / "scenes/Main.tscn").read_text(encoding="utf-8")
+    balance = ROOT / "scripts/BalanceAudit.gd"
+    require(balance.exists(), "Missing scripts/BalanceAudit.gd")
+    balance_text = balance.read_text(encoding="utf-8")
+    for token in ["BALANCE_AUDIT_OK", "balance-truth", "balance-refuse", "balance-chaos", "_assert_truth_route", "_assert_refuse_route", "_assert_chaos_route"]:
+        require(token in balance_text, f"BalanceAudit.gd missing {token}")
     require('run/main_scene="res://scenes/Main.tscn"' in project, "Main scene is not configured")
     for token in [
         "BG_PEEPHOLE",
@@ -300,9 +328,11 @@ def audit_release() -> list[str]:
     require(preset.exists(), "Missing export_presets.cfg")
     require(build.exists(), "Missing tools/build_release.ps1")
     text = preset.read_text(encoding="utf-8")
+    build_text = build.read_text(encoding="utf-8")
     require('platform="Windows Desktop"' in text, "Missing Windows Desktop export preset")
     require("build/windows/猫眼之后.exe" in text, "Export path not configured")
-    return ["windows_export_preset=yes", "release_script=yes"]
+    require("BalanceAudit.gd" in build_text, "Release script must run BalanceAudit.gd")
+    return ["windows_export_preset=yes", "release_script=yes", "balance_audit=yes"]
 
 
 def main() -> int:

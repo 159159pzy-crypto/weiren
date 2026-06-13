@@ -42,6 +42,7 @@ Write-Host "3/4 Godot smoke"
 Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--quit-after", "1")
 Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--script", "res://scripts/SmokeTest.gd")
 Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--script", "res://scripts/FullRunAudit.gd")
+Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--script", "res://scripts/BalanceAudit.gd")
 
 if ($SkipExport) {
     Write-Host "4/4 Export skipped"
