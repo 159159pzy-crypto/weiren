@@ -325,6 +325,10 @@ func _start_new_game() -> void:
 		"stolen": 0,
 		"refusal_streak": 0,
 		"guarded": false,
+		"code_phrase": "",
+		"detector_focus": "none",
+		"rooms_assigned": false,
+		"supplies_distributed": false,
 		"room_search_bonus": 0,
 		"log": [],
 		"evidence": []
@@ -340,6 +344,9 @@ func _begin_day() -> void:
 	_hide_character_portrait()
 	state["quarantine_used"] = 0
 	state["guarded"] = false
+	state["detector_focus"] = "none"
+	state["rooms_assigned"] = false
+	state["supplies_distributed"] = false
 	state["room_search_bonus"] = 0
 	_generate_visitors()
 	_set_background(BG_ROOM)
@@ -352,6 +359,10 @@ func _begin_day() -> void:
 	_clear_actions()
 	_add_action("修理门锁（体力 12，零件 8）", _prep_repair_door)
 	_add_action("加固隔离区（体力 15，物资 6）", _prep_fortify_quarantine)
+	_add_action("分配房间（体力 5）", _prep_assign_rooms)
+	_add_action("设定今日暗号（体力 4）", _prep_set_code)
+	_add_action("选择重点检测设备（体力 5）", _prep_select_detector)
+	_add_action("分配物资（物资 10）", _prep_distribute_supplies)
 	_add_action("整理线索板（体力 6）", _prep_sort_evidence)
 	_add_action("安排守夜（物资 8，信任 -2）", _prep_set_guard)
 	_add_action("短休并进门口（体力 +10）", _prep_rest)
@@ -379,6 +390,47 @@ func _prep_fortify_quarantine() -> void:
 	state["supplies"] -= 6
 	state["quarantine"] = mini(100, state["quarantine"] + 24)
 	_log("加固隔离区，玻璃后的第二道锁重新咬合。")
+	_begin_day()
+
+
+func _prep_assign_rooms() -> void:
+	if !_spend_stamina(5):
+		return
+	state["rooms_assigned"] = true
+	state["trust"] = mini(100, state["trust"] + 3)
+	state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 5)
+	_log("重新分配房间：每个人的睡位、门缝和逃生路线都被写到线索板上。")
+	_begin_day()
+
+
+func _prep_set_code() -> void:
+	if !_spend_stamina(4):
+		return
+	var codes := ["蓝色不是紫色", "猫不敲三下", "鼓槌在左手", "不要说完整名字", "天亮前不唱副歌"]
+	state["code_phrase"] = codes[(int(state["day"]) + int(current_seed)) % codes.size()]
+	state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 4)
+	_log("设定今日暗号：" + str(state["code_phrase"]) + "。答错半句的人更容易被记录。")
+	_begin_day()
+
+
+func _prep_select_detector() -> void:
+	if !_spend_stamina(5):
+		return
+	var sequence := ["teeth", "iris", "finger", "breath_shadow", "footprint", "environment"]
+	state["detector_focus"] = sequence[(int(state["day"]) - 1) % sequence.size()]
+	_log("今晚重点检测设备：" + _detector_label(str(state["detector_focus"])) + "。对应检查更省体力，成功率更高。")
+	_begin_day()
+
+
+func _prep_distribute_supplies() -> void:
+	if state["supplies"] < 10:
+		_notice("物资不足，无法提前分配。")
+		return
+	state["supplies"] -= 10
+	state["supplies_distributed"] = true
+	state["trust"] = mini(100, state["trust"] + 8)
+	state["stamina"] = mini(state["stamina_max"], state["stamina"] + 6)
+	_log("提前分配物资。有人终于愿意相信今晚不是只靠怀疑活下去。")
 	_begin_day()
 
 
@@ -476,7 +528,9 @@ func _make_evidence(character: Dictionary, role: String, event: Dictionary, day:
 		evidence.append(_clue("行为可疑", _pick(mislead), "behavior", false, 1))
 		evidence.append(_clue("真实记忆", character.get("memory", ""), "memory", false, -1))
 		if event.get("id", "") == "visitor_wrong_code":
-			evidence.append(_clue("暗号解释", "她说收到的是旧暗号，时间线能勉强对上。", "memory", false, -1))
+			evidence.append(_clue("暗号解释", "她说收到的是旧暗号；今日暗号是“" + str(state.get("code_phrase", "未设定")) + "”，时间线能勉强对上。", "memory", false, -1))
+		elif event.get("id", "") == "visitor_knows_inside":
+			evidence.append(_clue("屋内细节", "她知道房间分配，但说法和线索板上的睡位一致。", "environment", false, -1))
 		elif event.get("id", "") == "visitor_supplies":
 			evidence.append(_clue("物资来源", "包装有雨水和便利店收据，来源大致可信。", "environment", false, -1))
 		else:
@@ -500,6 +554,12 @@ func _make_evidence(character: Dictionary, role: String, event: Dictionary, day:
 
 	var physical := []
 	physical.append(_clue("完美牙齿", "牙齿整齐得像同一套白瓷，没有磨损。", "teeth", true, 2))
+	if event.get("id", "") == "visitor_wrong_code" and !str(state.get("code_phrase", "")).is_empty():
+		physical.append(_clue("暗号错位", "她复述暗号时把“" + str(state["code_phrase"]) + "”说成了上一夜的版本。", "memory", true, 3))
+	elif event.get("id", "") == "visitor_knows_inside":
+		physical.append(_clue("知道屋内", "她说出房间细节，却把今晚分配的睡位说反了。", "environment", true, 3))
+	elif event.get("id", "") == "visitor_fake_radio":
+		physical.append(_clue("假情报", "广播里的规则停顿太整齐，像从线索板反向拼出来。", "environment", true, 2))
 	if day >= 2:
 		physical.append(_clue("红虹膜", "虹膜边缘有不自然的红偏。", "iris", true, 2))
 		physical.append(_clue("指尖黑泥", "指甲缝里有不属于走廊的黑泥。", "finger", true, 2))
@@ -549,15 +609,15 @@ func _show_current_visitor() -> void:
 	_add_action("提交自由盘问（体力 2）", _ask_free_question)
 	_add_action("普通盘问（体力 1）", _ask_basic)
 	_add_action("深度盘问（体力 3，学习 +）", _ask_deep)
-	_add_action("牙齿检查（体力 4）", func(): _inspect_category("teeth", 4, "牙齿检查"))
+	_add_action(_inspect_action_label("牙齿检查", "teeth", 4), func(): _inspect_category("teeth", 4, "牙齿检查"))
 	if state["day"] >= 2:
-		_add_action("虹膜检查（体力 4）", func(): _inspect_category("iris", 4, "虹膜检查"))
-		_add_action("手指污垢检查（体力 3）", func(): _inspect_category("finger", 3, "手指检查"))
+		_add_action(_inspect_action_label("虹膜检查", "iris", 4), func(): _inspect_category("iris", 4, "虹膜检查"))
+		_add_action(_inspect_action_label("手指污垢检查", "finger", 3), func(): _inspect_category("finger", 3, "手指检查"))
 	if state["day"] >= 3:
-		_add_action("呼吸/影子检测（体力 4）", _inspect_breath_shadow)
+		_add_action(_inspect_action_label("呼吸/影子检测", "breath_shadow", 4), _inspect_breath_shadow)
 	if state["day"] >= 4:
-		_add_action("足迹检测板（体力 5）", func(): _inspect_category("footprint", 5, "足迹检测"))
-	_add_action("查证路线与线索板（体力 4）", func(): _inspect_category("environment", 4, "路线查证"))
+		_add_action(_inspect_action_label("足迹检测板", "footprint", 5), func(): _inspect_category("footprint", 5, "足迹检测"))
+	_add_action(_inspect_action_label("查证路线与线索板", "environment", 4), func(): _inspect_category("environment", 4, "路线查证"))
 	_add_action("开门放入屋内", func(): _decide_visitor("admit"))
 	_add_action("放入隔离区", func(): _decide_visitor("quarantine"))
 	_add_action("驱逐/拒绝开门", func(): _decide_visitor("reject"))
@@ -784,11 +844,51 @@ func _ask_deep() -> void:
 	_show_current_visitor_with_response(response)
 
 
+func _detector_label(focus: String) -> String:
+	match focus:
+		"teeth":
+			return "牙齿检查"
+		"iris":
+			return "虹膜检查"
+		"finger":
+			return "指泥检查"
+		"breath_shadow":
+			return "呼吸/影子检测"
+		"footprint":
+			return "足迹检测板"
+		"environment":
+			return "路线与线索板"
+		_:
+			return "未指定"
+
+
+func _detector_matches(category: String) -> bool:
+	var focus := str(state.get("detector_focus", "none"))
+	if focus == category:
+		return true
+	return focus == "breath_shadow" and (category == "breath" or category == "shadow")
+
+
+func _inspection_cost(category: String, base_cost: int) -> int:
+	return maxi(1, base_cost - (2 if _detector_matches(category) else 0))
+
+
+func _inspection_chance(category: String, base_chance: int) -> int:
+	return mini(98, base_chance + (6 if _detector_matches(category) else 0))
+
+
+func _inspect_action_label(label: String, category: String, base_cost: int) -> String:
+	var cost := _inspection_cost(category, base_cost)
+	var suffix := " / 重点" if _detector_matches(category) else ""
+	return label + "（体力 " + str(cost) + suffix + "）"
+
+
 func _inspect_breath_shadow() -> void:
-	if !_spend_stamina(4):
+	var cost := _inspection_cost("breath_shadow", 4)
+	if !_spend_stamina(cost):
 		return
 	var visitor: Dictionary = current_visitors[current_visitor_index]
-	var clue := _reveal_next_clue(visitor, ["breath", "shadow"], 90)
+	var clue := _reveal_next_clue(visitor, ["breath", "shadow"], _inspection_chance("breath_shadow", 90))
 	if clue.is_empty():
 		_log("呼吸/影子检测未发现明确异常。")
 	else:
@@ -797,10 +897,11 @@ func _inspect_breath_shadow() -> void:
 
 
 func _inspect_category(category: String, cost: int, label: String) -> void:
-	if !_spend_stamina(cost):
+	var actual_cost := _inspection_cost(category, cost)
+	if !_spend_stamina(actual_cost):
 		return
 	var visitor: Dictionary = current_visitors[current_visitor_index]
-	var clue := _reveal_next_clue(visitor, [category], 92)
+	var clue := _reveal_next_clue(visitor, [category], _inspection_chance(category, 92))
 	if clue.is_empty():
 		_log(label + "没有发现明确异常。")
 	else:
@@ -1110,10 +1211,11 @@ func _resolve_sleep_event(events: Array, index: int, choice: String) -> void:
 			state["evidence_integrity"] = mini(100, state["evidence_integrity"] + 4)
 			_log("你查看了" + ev.get("name", "") + "，得到一条模糊线索。")
 	elif choice == "call":
-		state["trust"] = maxi(0, state["trust"] - 3)
+		var trust_cost := 1 if bool(state.get("supplies_distributed", false)) else 3
+		state["trust"] = maxi(0, state["trust"] - trust_cost)
 		if state["humans_inside"] > 0:
 			state["contamination"] = maxi(0, state["contamination"] - 1)
-			_log("有人陪你查看，恐惧被分摊了一点。")
+			_log("有人陪你查看，恐惧被分摊了一点。" + ("提前分配的物资让大家少了些怨气。" if trust_cost == 1 else ""))
 		else:
 			state["mimic_learning"] = mini(100, state["mimic_learning"] + 5)
 			_log("你叫来的声音不太像你记得的那个人。")
@@ -1133,6 +1235,10 @@ func _dawn_settlement(_events: Array) -> void:
 	_set_background(BG_ROOM)
 	_hide_character_portrait()
 	var fake_pressure := int(state["fakes_inside"]) * rng.randi_range(7, 14) + int(state["mimics_inside"]) * rng.randi_range(12, 22)
+	if bool(state.get("rooms_assigned", false)):
+		fake_pressure = int(round(float(fake_pressure) * 0.75))
+		if fake_pressure > 0:
+			_log("房间分配延缓了屋内污染扩散。")
 	if fake_pressure > 0:
 		state["contamination"] = mini(100, state["contamination"] + fake_pressure / 2)
 		state["door"] = maxi(0, state["door"] - fake_pressure / 3)
@@ -1279,6 +1385,10 @@ func _update_panels() -> void:
 	status += _bar("隔离", state["quarantine"], 100, "#8ab4ff")
 	status += _bar("物资", state["supplies"], 100, "#d5e878")
 	status += "\n信任：" + str(state["trust"]) + "\n见死不救：" + str(state["abandonment"]) + "/10\n外部危险：" + str(state["outside_danger"]) + "\n线索可信：" + str(state["evidence_integrity"]) + "\n伪人学习：" + str(state["mimic_learning"]) + "\n"
+	status += "暗号：" + (str(state.get("code_phrase", "")) if !str(state.get("code_phrase", "")).is_empty() else "未设定") + "\n"
+	status += "重点检测：" + _detector_label(str(state.get("detector_focus", "none"))) + "\n"
+	status += "房间分配：" + ("已完成" if bool(state.get("rooms_assigned", false)) else "未完成") + "\n"
+	status += "物资分配：" + ("已完成" if bool(state.get("supplies_distributed", false)) else "未完成") + "\n"
 	stats_label.text = status
 	var board := "[color=#ffc878]最近记录[/color]\n" + _recent_lines(state["log"], 10)
 	board += "\n\n[color=#9ef0dc]证据[/color]\n" + _recent_lines(state["evidence"], 12)

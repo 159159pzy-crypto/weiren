@@ -4,9 +4,12 @@ var scene: Node
 
 func _initialize() -> void:
 	var results := []
-	results.append(await _run_strategy("audit-true", "truth"))
-	results.append(await _run_strategy("audit-refuse", "refuse"))
-	results.append(await _run_strategy("audit-chaos", "chaos"))
+	for spec in [["audit-true", "truth"], ["audit-refuse", "refuse"], ["audit-chaos", "chaos"]]:
+		var result: Dictionary = await _run_strategy(spec[0], spec[1])
+		if bool(result.get("failed", false)):
+			quit(1)
+			return
+		results.append(result)
 	print("FULL_RUN_AUDIT_OK ", JSON.stringify(results))
 	quit()
 
@@ -46,8 +49,7 @@ func _run_strategy(seed_text: String, strategy: String) -> Dictionary:
 		await process_frame
 	if scene.current_phase != "ending":
 		push_error("Full run audit did not reach ending for " + strategy + ": phase=" + str(scene.current_phase) + " day=" + str(scene.state.get("day", "?")))
-		quit(1)
-		return {}
+		return {"failed": true, "strategy": strategy}
 	return {
 		"strategy": strategy,
 		"seed": seed_text,
@@ -76,6 +78,8 @@ func _play_door_strategy(strategy: String) -> void:
 		"chaos":
 			if int(scene.current_visitor_index) % 2 == 0:
 				scene._decide_visitor("admit")
+			elif int(scene.state.get("quarantine_used", 0)) >= 2 or int(scene.state.get("quarantine", 0)) <= 0:
+				scene._decide_visitor("reject")
 			else:
 				scene._decide_visitor("quarantine")
 		_:

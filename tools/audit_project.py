@@ -131,6 +131,10 @@ def audit_godot() -> list[str]:
         "CHAR_MIMIC",
         "CHAR_RIKKI",
         "BACKEND_DIALOGUE_URL",
+        "_prep_assign_rooms",
+        "_prep_set_code",
+        "_prep_select_detector",
+        "_prep_distribute_supplies",
         "_ask_free_question",
         "_judge_final_ending",
         "_request_backend_dialogue",
@@ -138,6 +142,10 @@ def audit_godot() -> list[str]:
         require(token in main, f"Main.gd missing {token}")
     for stale in ["char_human_visitor_hui.png", "char_mimic_visitor_hui.png", "char_another_rikki_hui.png"]:
         require(stale not in main, f"Main.gd still references old character asset {stale}")
+    for label in ["分配房间", "设定今日暗号", "选择重点检测设备", "分配物资"]:
+        require(label in main, f"Main.gd missing prep action {label}")
+    for state_key in ["code_phrase", "detector_focus", "rooms_assigned", "supplies_distributed"]:
+        require(state_key in main, f"Main.gd missing prep state {state_key}")
     require('script = ExtResource("1_main")' in scene, "Main scene does not attach Main.gd")
     endings = re.findall(r'title = "([^"]*End[^"]*)"', main)
     require(len(endings) >= 7, "Expected multiple ending branches in Main.gd")
