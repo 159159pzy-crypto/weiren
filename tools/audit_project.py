@@ -181,11 +181,12 @@ def audit_assets() -> list[str]:
         "assets/generated/bg_safe_room_clueboard_16x9.png",
     ]
     cgs = cg_assets
+    character_roles = ["human", "fake", "mimic", "rikki"]
+    character_variants = ["base", "calm", "stress", "doubt"]
     characters = [
-        "assets/generated/char_human_base.png",
-        "assets/generated/char_fake_base.png",
-        "assets/generated/char_mimic_base.png",
-        "assets/generated/char_rikki_base.png",
+        f"assets/generated/char_{role}_{variant}.png"
+        for role in character_roles
+        for variant in character_variants
     ]
     source_assets = ["assets/generated/another_rikki_final.png"]
     allowed_stems = {
@@ -197,6 +198,7 @@ def audit_assets() -> list[str]:
         "char_mimic_base",
         "char_rikki_base",
     }
+    allowed_stems.update(Path(path).stem for path in characters)
     allowed_stems.update(Path(path).stem for path in cgs)
     assert_no_preprocessor_leaks()
     assert_no_generated_orphans(allowed_stems)
@@ -215,7 +217,9 @@ def audit_assets() -> list[str]:
     for path in characters + backgrounds + source_assets:
         assert_hires_sane(path)
     assert_sidecar_contains("assets/generated/cg_another_rikki_hui_16x9.asset-plan.json", "hui-derived-16x9-adapter")
-    return ["backgrounds=2@16:9", "characters=4@no-lora", f"cg={len(cgs)}@no-lora-16:9", "door_event_cg=13", "inspection_cg=7", "preprocessor_leaks=none", "vae=checkpoint_default"]
+    variant_script = ROOT / "tools/make_character_variants.py"
+    require(variant_script.exists(), "Missing tools/make_character_variants.py")
+    return ["backgrounds=2@16:9", f"characters={len(characters)}@no-lora", f"cg={len(cgs)}@no-lora-16:9", "door_event_cg=13", "inspection_cg=7", "preprocessor_leaks=none", "vae=checkpoint_default"]
 
 
 def audit_godot() -> list[str]:
@@ -274,7 +278,7 @@ def audit_godot() -> list[str]:
         "_request_backend_dialogue",
     ]:
         require(token in main, f"Main.gd missing {token}")
-    for token in ["cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_calm_16x9.png", "cg_door_panic_16x9.png", "cg_door_injured_16x9.png", "cg_door_knows_inside_16x9.png", "cg_door_wrong_code_16x9.png", "cg_door_silent_16x9.png", "cg_door_fake_radio_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_inspect_teeth_16x9.png", "cg_inspect_room_search_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
+    for token in ["char_human_stress.png", "char_fake_doubt.png", "char_mimic_doubt.png", "char_rikki_stress.png", "cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_calm_16x9.png", "cg_door_panic_16x9.png", "cg_door_injured_16x9.png", "cg_door_knows_inside_16x9.png", "cg_door_wrong_code_16x9.png", "cg_door_silent_16x9.png", "cg_door_fake_radio_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_inspect_teeth_16x9.png", "cg_inspect_room_search_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
         require(token in main, f"Main.gd missing CG mapping {token}")
     for stale in ["char_human_visitor_hui.png", "char_mimic_visitor_hui.png", "char_another_rikki_hui.png"]:
         require(stale not in main, f"Main.gd still references old character asset {stale}")

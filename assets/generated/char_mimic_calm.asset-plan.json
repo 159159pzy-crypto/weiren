@@ -1,0 +1,25 @@
+{
+  "mode": "derived-character-variant",
+  "source": "assets/generated/char_mimic_base.png",
+  "output": "assets\\generated\\char_mimic_calm.png",
+  "role": "character",
+  "character_base": "mimic",
+  "variant": "calm",
+  "loras": [],
+  "vae": "checkpoint_default",
+  "input_image": null,
+  "mask_image": null,
+  "comfyui_input_image": null,
+  "comfyui_mask_image": null,
+  "hires_scale": 1.0,
+  "hires_steps": 1,
+  "hires_denoise": 0.15,
+  "workflow_safety": {
+    "active_loras": [],
+    "controlnet_preprocessor_nodes": [],
+    "suspicious_preprocessor_nodes": [],
+    "lora_policy": "no final character LoRA; derived from audited base portrait",
+    "hires_fix": "not rerun here; color-grade variant from audited character portrait",
+    "vae_policy": "checkpoint_default from source generation"
+  }
+}

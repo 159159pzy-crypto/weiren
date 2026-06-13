@@ -14,6 +14,33 @@ const CHAR_MIMIC := "res://assets/generated/char_mimic_base.png"
 const CHAR_RIKKI := "res://assets/generated/char_rikki_base.png"
 const BACKEND_DIALOGUE_URL := "http://127.0.0.1:8787/v1/dialogue"
 
+const CHARACTER_VARIANTS := {
+	"human": {
+		"base": CHAR_HUMAN,
+		"calm": "res://assets/generated/char_human_calm.png",
+		"stress": "res://assets/generated/char_human_stress.png",
+		"doubt": "res://assets/generated/char_human_doubt.png",
+	},
+	"fake": {
+		"base": CHAR_FAKE,
+		"calm": "res://assets/generated/char_fake_calm.png",
+		"stress": "res://assets/generated/char_fake_stress.png",
+		"doubt": "res://assets/generated/char_fake_doubt.png",
+	},
+	"mimic": {
+		"base": CHAR_MIMIC,
+		"calm": "res://assets/generated/char_mimic_calm.png",
+		"stress": "res://assets/generated/char_mimic_stress.png",
+		"doubt": "res://assets/generated/char_mimic_doubt.png",
+	},
+	"rikki": {
+		"base": CHAR_RIKKI,
+		"calm": "res://assets/generated/char_rikki_calm.png",
+		"stress": "res://assets/generated/char_rikki_stress.png",
+		"doubt": "res://assets/generated/char_rikki_doubt.png",
+	},
+}
+
 const SLEEP_CG := {
 	"sleep_living_noise": "res://assets/generated/cg_sleep_living_noise_16x9.png",
 	"sleep_kitchen_water": "res://assets/generated/cg_sleep_kitchen_water_16x9.png",
@@ -840,13 +867,21 @@ func _visitor_intro(visitor: Dictionary) -> String:
 
 func _portrait_for_visitor(visitor: Dictionary) -> String:
 	var character: Dictionary = visitor["character"]
+	var event_id := str(visitor.get("event", {}).get("id", ""))
+	var variant := "base"
+	if event_id in ["visitor_chased", "mistaken_chased", "visitor_panic", "visitor_injured"]:
+		variant = "stress"
+	elif event_id in ["visitor_knows_inside", "visitor_wrong_code", "visitor_duplicate", "visitor_silent", "visitor_fake_radio", "visitor_asks_someone", "visitor_childlike"] or int(state.get("day", 1)) >= 6:
+		variant = "doubt"
+	elif event_id in ["visitor_calm", "visitor_supplies"]:
+		variant = "calm"
 	if character.get("id", "") == "taki_fake":
-		return CHAR_RIKKI
+		return str(CHARACTER_VARIANTS["rikki"].get(variant, CHAR_RIKKI))
 	if visitor.get("role", "") == "human":
-		return CHAR_HUMAN
+		return str(CHARACTER_VARIANTS["human"].get(variant, CHAR_HUMAN))
 	if visitor.get("role", "") == "fake":
-		return CHAR_FAKE
-	return CHAR_MIMIC
+		return str(CHARACTER_VARIANTS["fake"].get(variant, CHAR_FAKE))
+	return str(CHARACTER_VARIANTS["mimic"].get(variant, CHAR_MIMIC))
 
 
 func _dialogue_for(visitor: Dictionary, mode: String) -> String:

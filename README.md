@@ -48,6 +48,7 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 - `assets/generated/char_fake_base.png`
 - `assets/generated/char_mimic_base.png`
 - `assets/generated/char_rikki_base.png`
+- `tools/make_character_variants.py` derives calm/stress/doubt portraits from the four audited bases; the release audit now expects 16 no-LoRA character portraits.
 - `assets/generated/cg_another_rikki_hui_16x9.png`
 - `data/cg_manifest.json` lists the current 39 audited 16:9 CG entries used by sleep events, all door events, inspections, and endings.
 
