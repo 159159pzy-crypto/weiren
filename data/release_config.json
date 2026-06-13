@@ -19,6 +19,7 @@
     "godot --headless --path D:\\game --script res://scripts/SmokeTest.gd",
     "godot --headless --path D:\\game --script res://scripts/FullRunAudit.gd",
     "godot --headless --path D:\\game --script res://scripts/BalanceAudit.gd",
+    "godot --headless --path D:\\game --script res://scripts/EndingReachabilityAudit.gd",
     "python -m backend.smoke_test",
     "powershell -ExecutionPolicy Bypass -File tools\\build_release.ps1 -SkipExport"
   ]

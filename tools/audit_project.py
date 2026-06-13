@@ -179,6 +179,7 @@ def audit_data() -> list[str]:
     require("LLM_API_KEY" in release_config.get("llm", {}).get("required_when_enabled", []), "Release config must document LLM_API_KEY")
     require(len(release_config.get("release_checks", [])) >= 6, "Release config must list release checks")
     require(any("BalanceAudit.gd" in check for check in release_config.get("release_checks", [])), "Release config must include balance audit")
+    require(any("EndingReachabilityAudit.gd" in check for check in release_config.get("release_checks", [])), "Release config must include ending reachability audit")
     return [
         f"characters={len(characters)}",
         "day_rules=1-9",
@@ -302,6 +303,11 @@ def audit_godot() -> list[str]:
     full_run = ROOT / "scripts/FullRunAudit.gd"
     require(full_run.exists(), "Missing scripts/FullRunAudit.gd")
     full_run_text = full_run.read_text(encoding="utf-8")
+    ending_audit = ROOT / "scripts/EndingReachabilityAudit.gd"
+    require(ending_audit.exists(), "Missing scripts/EndingReachabilityAudit.gd")
+    ending_audit_text = ending_audit.read_text(encoding="utf-8")
+    for token in ["ENDING_REACHABILITY_OK", "true", "good", "neutral", "no_one", "perfect_band", "purple", "identity", "door", "hidden", "distortion"]:
+        require(token in ending_audit_text, f"EndingReachabilityAudit.gd missing {token}")
     for token in ["_quarantine_available", "quarantine_capacity", "_play_quarantine_strategy", "quarantine_followup"]:
         require(token in balance_text, f"BalanceAudit.gd missing quarantine capacity audit token {token}")
         require(token in full_run_text, f"FullRunAudit.gd missing quarantine capacity audit token {token}")
@@ -458,7 +464,8 @@ def audit_release() -> list[str]:
     require('platform="Windows Desktop"' in text, "Missing Windows Desktop export preset")
     require("build/windows/猫眼之后.exe" in text, "Export path not configured")
     require("BalanceAudit.gd" in build_text, "Release script must run BalanceAudit.gd")
-    return ["windows_export_preset=yes", "release_script=yes", "balance_audit=yes"]
+    require("EndingReachabilityAudit.gd" in build_text, "Release script must run EndingReachabilityAudit.gd")
+    return ["windows_export_preset=yes", "release_script=yes", "balance_audit=yes", "ending_reachability=yes"]
 
 
 def main() -> int:

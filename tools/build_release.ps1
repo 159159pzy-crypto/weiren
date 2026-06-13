@@ -43,6 +43,7 @@ Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--quit-after", 
 Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--script", "res://scripts/SmokeTest.gd")
 Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--script", "res://scripts/FullRunAudit.gd")
 Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--script", "res://scripts/BalanceAudit.gd")
+Invoke-GodotCheck -Arguments @("--headless", "--path", "$root", "--script", "res://scripts/EndingReachabilityAudit.gd")
 
 if ($SkipExport) {
     Write-Host "4/4 Export skipped"
