@@ -1187,6 +1187,8 @@ func _request_backend_dialogue(visitor: Dictionary, question: String, clue: Dict
 	}
 	pending_backend_context = {
 		"character": character.get("short", character.get("name", "")),
+		"character_id": character.get("id", ""),
+		"visitor_index": current_visitor_index,
 		"question": question
 	}
 	var err := dialogue_http.request(
@@ -1211,12 +1213,58 @@ func _on_dialogue_http_completed(result: int, response_code: int, _headers: Pack
 	if dialogue.is_empty():
 		return
 	var action := str(parsed.get("action", ""))
+	var emotion := str(parsed.get("emotion", ""))
+	var expression := str(parsed.get("expression", ""))
 	var source := str(parsed.get("source", "backend"))
-	narrative.text += "\n\n[color=#8ab4ff]后端表演 / " + source + "：[/color]“" + dialogue + "”"
+	var meta := source
+	if !emotion.is_empty():
+		meta += " / " + emotion
+	if !expression.is_empty() and expression != emotion:
+		meta += " / " + expression
+	narrative.text += "\n\n[color=#8ab4ff]后端表演 / " + meta + "：[/color]“" + dialogue + "”"
 	if !action.is_empty():
 		narrative.text += "\n[color=#8ab4ff]" + action + "[/color]"
-	_log("后端表演完成：" + source)
+	_apply_backend_dialogue_effects(parsed)
+	var options: Array = parsed.get("suggested_options", [])
+	if !options.is_empty():
+		narrative.text += "\n[color=#8ab4ff]建议选项：" + " / ".join(options.map(func(item): return str(item))) + "[/color]"
+	_log("后端表演完成：" + source + _backend_effect_summary(parsed))
 	_update_panels()
+
+
+func _apply_backend_dialogue_effects(parsed: Dictionary) -> void:
+	var trust_delta := clampi(int(parsed.get("trust_delta", 0)), -10, 10)
+	var stress_delta := clampi(int(parsed.get("stress_delta", 0)), -10, 10)
+	var stamina_cost := clampi(int(parsed.get("stamina_cost", 0)), 0, 5)
+	if trust_delta != 0:
+		state["trust"] = clampi(int(state.get("trust", 0)) + trust_delta, 0, 100)
+	if stamina_cost > 0:
+		state["stamina"] = maxi(0, int(state.get("stamina", 0)) - stamina_cost)
+	var index := int(pending_backend_context.get("visitor_index", -1))
+	if index >= 0 and index < current_visitors.size():
+		var visitor: Dictionary = current_visitors[index]
+		var character: Dictionary = visitor.get("character", {})
+		if str(character.get("id", "")) == str(pending_backend_context.get("character_id", "")):
+			visitor["stress"] = clampi(int(visitor.get("stress", 50)) + stress_delta, 0, 100)
+			_adjust_character_relation(character, trust_delta, stress_delta, "LLM表演反馈")
+	if bool(parsed.get("clue_triggered", false)):
+		state["evidence_integrity"] = mini(100, int(state.get("evidence_integrity", 0)) + 1)
+
+
+func _backend_effect_summary(parsed: Dictionary) -> String:
+	var parts := []
+	var trust_delta := int(parsed.get("trust_delta", 0))
+	var stress_delta := int(parsed.get("stress_delta", 0))
+	var stamina_cost := int(parsed.get("stamina_cost", 0))
+	if trust_delta != 0:
+		parts.append("信任" + ("+" if trust_delta > 0 else "") + str(trust_delta))
+	if stress_delta != 0:
+		parts.append("压力" + ("+" if stress_delta > 0 else "") + str(stress_delta))
+	if stamina_cost > 0:
+		parts.append("体力-" + str(stamina_cost))
+	if bool(parsed.get("clue_triggered", false)):
+		parts.append("线索触发")
+	return "" if parts.is_empty() else "（" + "，".join(parts) + "）"
 
 
 func _categories_for_question(question: String) -> Array:

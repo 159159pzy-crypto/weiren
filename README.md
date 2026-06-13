@@ -57,6 +57,7 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 - `data/broadcasts.json` drives day 1-9 TV/radio rule updates during dusk prep, with one-time state effects for evidence integrity, quarantine pressure, identity theft warnings, gun charges, self-check pressure, and final judgment distortion.
 - Dusk prep now includes yesterday-record review and quarantine inspection, so the player can connect dawn settlement outcomes back into the next night's decisions.
 - Refusal penalties now track total refusals, consecutive rejected humans, persistent stamina-cap loss from missed supplies, and outside-danger-driven chase pressure.
+- Optional LLM/free-dialogue responses now surface emotion, expression, suggested options, clue-trigger flags, and bounded trust/stress/stamina effects inside Godot while the game still owns truth and outcomes.
 
 ## 验证
 

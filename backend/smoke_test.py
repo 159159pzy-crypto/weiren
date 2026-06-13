@@ -32,6 +32,9 @@ def main() -> None:
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["clue_triggered"] is True
+    for key in ["emotion", "expression", "action", "trust_delta", "stress_delta", "stamina_cost", "suggested_options"]:
+        assert key in data, key
+    assert isinstance(data["suggested_options"], list)
     assert "暗号" in data["dialogue"]
     logs = client.get("/v1/logs/backend-smoke")
     assert logs.status_code == 200, logs.text

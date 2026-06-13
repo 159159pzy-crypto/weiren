@@ -335,6 +335,12 @@ def audit_godot() -> list[str]:
         "_ask_free_question",
         "_judge_final_ending",
         "_request_backend_dialogue",
+        "_apply_backend_dialogue_effects",
+        "_backend_effect_summary",
+        "suggested_options",
+        "trust_delta",
+        "stress_delta",
+        "stamina_cost",
     ]:
         require(token in main, f"Main.gd missing {token}")
     for token in ["bg_title_night_16x9.png", "bg_prep_clueboard_16x9.png", "bg_quarantine_glass_16x9.png", "bg_dawn_settlement_16x9.png", "fx_contamination_overlay.png", "fx_door_damage_overlay.png", "fx_outside_danger_overlay.png", "fx_trust_break_overlay.png", "fx_evidence_noise_overlay.png", "fx_mimic_learning_overlay.png", "ui_icon_stamina.png", "ui_icon_contamination.png", "ui_icon_door.png", "ui_icon_quarantine.png", "ui_icon_supplies.png", "ui_icon_trust.png", "ui_icon_danger.png", "ui_icon_evidence.png", "char_human_stress.png", "char_fake_doubt.png", "char_mimic_doubt.png", "char_rikki_stress.png", "cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_calm_16x9.png", "cg_door_panic_16x9.png", "cg_door_injured_16x9.png", "cg_door_knows_inside_16x9.png", "cg_door_wrong_code_16x9.png", "cg_door_silent_16x9.png", "cg_door_fake_radio_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_inspect_teeth_16x9.png", "cg_inspect_room_search_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
@@ -377,7 +383,7 @@ def audit_godot() -> list[str]:
 
 def audit_backend() -> list[str]:
     backend = (ROOT / "backend/main.py").read_text(encoding="utf-8")
-    for token in ["FastAPI", "sqlite3", "DialogueRequest", "DialogueResponse", "/v1/dialogue", "/v1/session/{session_id}/summary", "source_counts", "clue_hits", "LLM_API_KEY"]:
+    for token in ["FastAPI", "sqlite3", "DialogueRequest", "DialogueResponse", "/v1/dialogue", "/v1/session/{session_id}/summary", "source_counts", "clue_hits", "LLM_API_KEY", "emotion", "expression", "trust_delta", "stress_delta", "stamina_cost", "suggested_options"]:
         require(token in backend, f"backend/main.py missing {token}")
     smoke = ROOT / "backend/smoke_test.py"
     require(smoke.exists(), "Missing backend smoke test")
