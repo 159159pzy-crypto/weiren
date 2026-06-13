@@ -1,0 +1,105 @@
+{
+  "brief": {
+    "role": "illustration",
+    "subject": "final night peephole view, a second version of the player standing outside the apartment door in rain shadow, ambiguous silhouette, psychological horror ending CG, no readable text",
+    "usage": "Godot game hidden ending CG for 猫眼之后",
+    "mood": "identity doubt, final judgment, uncanny calm",
+    "project_name": "猫眼之后",
+    "style": [
+      "polished anime horror CG, fisheye peephole distortion, dramatic rim light, CRT noise, no readable text"
+    ],
+    "palette": [
+      "cold cyan, emergency red, green-black, pale skin tones"
+    ],
+    "output": "D:\\game\\assets\\generated\\another_rikki_final.png"
+  },
+  "api": "http://127.0.0.1:8188",
+  "model": {
+    "id": "wai-illustrious-sdxl-v170",
+    "enabled": true,
+    "checkpoint": "人物\\waiIllustriousSDXL_v170.safetensors",
+    "base": "sdxl",
+    "priority": 80,
+    "best_for": [
+      "illustration",
+      "character",
+      "anime",
+      "game-art",
+      "thumbnail",
+      "portrait",
+      "bang-dream",
+      "illustrious"
+    ],
+    "avoid_for": [
+      "realistic-product-photo",
+      "photography",
+      "texture",
+      "flat-icon"
+    ],
+    "default_size": [
+      1024,
+      1024
+    ],
+    "default_steps": 30,
+    "default_cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "quality_prompt": "masterpiece, best quality, newest, highres, polished anime illustration, clean linework",
+    "default_negative": "low quality, worst quality, normal quality, blurry, jpeg artifacts, watermark, signature, unwanted text, logo, bad anatomy, extra fingers, malformed hands"
+  },
+  "loras": [],
+  "workflow": {
+    "id": "webui-like-sdxl-txt2img",
+    "file": "assets/workflows/webui-like-sdxl-txt2img.json",
+    "base": "sdxl",
+    "priority": 25,
+    "best_for": [
+      "webui",
+      "txt2img",
+      "hires",
+      "high-resolution",
+      "hero",
+      "character",
+      "illustration",
+      "background",
+      "thumbnail"
+    ],
+    "supports_lora": true,
+    "supports_hires_fix": true,
+    "supports_final_resize": true,
+    "notes": "Native-node WebUI-like chain: txt2img, LoRA insertion, latent Hires.fix, second denoise pass, VAE decode, final pixel resize, save."
+  },
+  "positive_prompt": "final night peephole view, a second version of the player standing outside the apartment door in rain shadow, ambiguous silhouette, psychological horror ending CG, no readable text, polished anime horror CG, fisheye peephole distortion, dramatic rim light, CRT noise, palette of cold cyan, emergency red, green-black, pale skin tones, identity doubt, final judgment, uncanny calm, polished illustration, strong composition, cohesive lighting, refined details, masterpiece, best quality, newest, highres, polished anime illustration, clean linework",
+  "negative_prompt": "low quality, blurry, watermark, signature, unwanted text, logo, messy linework, distorted anatomy, worst quality, normal quality, jpeg artifacts, bad anatomy, extra fingers, malformed hands",
+  "width": 1024,
+  "height": 1024,
+  "steps": 30,
+  "cfg": 6.5,
+  "sampler": "dpmpp_2m",
+  "scheduler": "karras",
+  "denoise": 1.0,
+  "hires_scale": 1.5,
+  "hires_steps": 12,
+  "hires_denoise": 0.35,
+  "hires_upscale_method": "nearest-exact",
+  "final_scale": 1.0,
+  "final_upscale_method": "lanczos",
+  "input_image": null,
+  "mask_image": null,
+  "comfyui_input_image": null,
+  "comfyui_mask_image": null,
+  "mask_grow": 6,
+  "mask_channel": "red",
+  "seed": 6410705299767687578,
+  "batch_size": 1,
+  "filename_prefix": "codex_another-rikki-final",
+  "output": "D:\\game\\assets\\generated\\another_rikki_final.png",
+  "workflow_file": "C:\\Users\\pzy\\.codex\\skills\\stable-diffusion-assets\\assets\\workflows\\webui-like-sdxl-txt2img.json",
+  "workflow_node_count": 10,
+  "prompt_id": "335f5edc-9682-47ce-a230-8d66d5c4aeb7",
+  "comfyui_image": {
+    "filename": "codex_another-rikki-final_00001_.png",
+    "subfolder": "",
+    "type": "output"
+  }
+}

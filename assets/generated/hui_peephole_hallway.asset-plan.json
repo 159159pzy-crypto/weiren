@@ -1,0 +1,18 @@
+{
+  "mode": "hui-prompt-only-locked",
+  "workflow": "C:\\Users\\pzy\\.codex\\skills\\stable-diffusion-assets\\assets\\workflows\\hui-locked-prompt-only.api.json",
+  "locked_non_prompt_sha256": "9857140df5905afa716238fbcf79c053b4af679f790fb25a242476f9b8977dd2",
+  "changed": {
+    "positive_node": "5",
+    "negative_node": "6"
+  },
+  "positive_prompt": "masterpiece,\nbest quality,\nultra detailed,\nanime horror game background,\nvisual novel CG,\n\nempty apartment hallway at midnight,\nseen through a peephole,\ndistorted fisheye perspective,\nrain streaks on glass,\nwet floor reflections,\nlocked doors on both sides,\nfluorescent ceiling light,\ndeep darkness at the end of the hallway,\n\nsickly green and cold cyan palette,\nsubtle CRT grain,\nquiet psychological dread,\nno people,\nno readable text\n",
+  "negative_prompt": "worst quality,\nlow quality,\nnormal quality,\nbad anatomy,\nbad proportions,\nbad hands,\nextra fingers,\nmissing fingers,\nfused fingers,\nextra arms,\nextra legs,\ndeformed face,\ncross eyed,\nblurry,\njpeg artifacts,\nwatermark,\ntext,\nlogo,\ncropped,\nduplicate,\n3d,\nphotorealistic,\nnsfw\n",
+  "output": "D:\\game\\assets\\generated\\hui_peephole_hallway.png",
+  "prompt_id": "f2e34c80-1cdb-4724-964a-16f3f7fb15a1",
+  "comfyui_image": {
+    "filename": "codex_tomori_manual_ultrasharp_00026_.png",
+    "subfolder": "",
+    "type": "output"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "mode": "hui-prompt-only-locked",
+  "workflow": "C:\\Users\\pzy\\.codex\\skills\\stable-diffusion-assets\\assets\\workflows\\hui-locked-prompt-only.api.json",
+  "locked_non_prompt_sha256": "9857140df5905afa716238fbcf79c053b4af679f790fb25a242476f9b8977dd2",
+  "changed": {
+    "positive_node": "5",
+    "negative_node": "6"
+  },
+  "positive_prompt": "masterpiece,\nbest quality,\nultra detailed,\nanime visual novel character art,\n\n1girl,\nsolo,\nanother version of the player character,\nshort dark hair,\nserious band girl,\nstanding outside the apartment door,\nblack jacket,\ncalm judgemental expression,\nfront view,\ncentered composition,\nred emergency backlight,\nidentity doubt,\npsychological horror mood,\nno readable text\n",
+  "negative_prompt": "worst quality,\nlow quality,\nnormal quality,\nbad anatomy,\nbad proportions,\nbad hands,\nextra fingers,\nmissing fingers,\nfused fingers,\nextra arms,\nextra legs,\ndeformed face,\ncross eyed,\nblurry,\njpeg artifacts,\nwatermark,\ntext,\nlogo,\ncropped,\nduplicate,\n3d,\nphotorealistic,\nnsfw\n",
+  "output": "D:\\game\\assets\\generated\\char_another_rikki_hui.png",
+  "prompt_id": "ec340c9d-fcd5-4874-87d9-90e9e6263e57",
+  "comfyui_image": {
+    "filename": "codex_tomori_manual_ultrasharp_00031_.png",
+    "subfolder": "",
+    "type": "output"
+  }
+}

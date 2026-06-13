@@ -1,0 +1,7 @@
+.godot/
+*.tmp
+*.translation
+user://
+backend/.venv/
+backend/game_state.sqlite3
+__pycache__/

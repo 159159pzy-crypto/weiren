@@ -1,0 +1,24 @@
+config_version=5
+
+[application]
+config/name="猫眼之后"
+config/description="九夜随机猫眼伪人辨识心理恐怖游戏"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.4", "Forward Plus")
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/mode=2
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+
+[input]
+ui_quick_save={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":true,"meta_pressed":false,"pressed":false,"keycode":83,"physical_keycode":0,"key_label":0,"unicode":0,"echo":false,"script":null)
+]
+}
+

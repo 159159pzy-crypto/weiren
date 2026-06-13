@@ -1,0 +1,12 @@
+[
+  {"day":1,"visitors_min":3,"visitors_max":3,"fakes_min":1,"fakes_max":1,"mimic_chance":0,"sleep_min":0,"sleep_max":1,"rule":"完美牙齿","focus":"教学夜：单条规则可靠，但真人也会害怕。"},
+  {"day":2,"visitors_min":5,"visitors_max":5,"fakes_min":2,"fakes_max":2,"mimic_chance":10,"sleep_min":1,"sleep_max":1,"rule":"红虹膜、指泥、足迹检测","focus":"多目标推理：一条异常不足以定罪。"},
+  {"day":3,"visitors_min":3,"visitors_max":4,"fakes_min":1,"fakes_max":2,"mimic_chance":25,"sleep_min":1,"sleep_max":1,"rule":"隔离区正式启用","focus":"随机压力：隔离能救人，也会消耗耐久。"},
+  {"day":4,"visitors_min":4,"visitors_max":5,"fakes_min":1,"fakes_max":2,"mimic_chance":40,"sleep_min":1,"sleep_max":2,"rule":"被追赶事件强化","focus":"救援与风险：拖延会让真人失踪。"},
+  {"day":5,"visitors_min":3,"visitors_max":5,"fakes_min":1,"fakes_max":2,"mimic_chance":60,"sleep_min":1,"sleep_max":2,"rule":"身份被盗机制","focus":"失踪者回归：熟脸开始变得不可靠。"},
+  {"day":6,"visitors_min":4,"visitors_max":5,"fakes_min":2,"fakes_max":2,"mimic_chance":70,"sleep_min":1,"sleep_max":2,"rule":"线索篡改、伪人学习","focus":"屋内不安全：证据本身也可能被污染。"},
+  {"day":7,"visitors_min":3,"visitors_max":5,"fakes_min":2,"fakes_max":3,"mimic_chance":80,"sleep_min":2,"sleep_max":2,"rule":"Gun/清除者阵营","focus":"内部冲突：清除权不等于可信。"},
+  {"day":8,"visitors_min":4,"visitors_max":5,"fakes_min":2,"fakes_max":3,"mimic_chance":90,"sleep_min":2,"sleep_max":2,"rule":"玩家污染","focus":"不可信视角：别人开始检查立希。"},
+  {"day":9,"visitors_min":3,"visitors_max":5,"fakes_min":2,"fakes_max":4,"mimic_chance":100,"sleep_min":2,"sleep_max":3,"rule":"规则失真、最终审判","focus":"终局夜：必须靠完整证据链。"}
+]
+

@@ -1,0 +1,129 @@
+{
+  "brief": {
+    "role": "background",
+    "subject": "cramped Japanese apartment safe room interior at night, evidence board with photos and strings but no readable text, CRT television static, locked front door, survival investigation workspace",
+    "usage": "Godot game clue board and room management background for 猫眼之后",
+    "mood": "paranoid investigation, exhausted safety, unstable evidence",
+    "project_name": "猫眼之后",
+    "style": [
+      "polished anime horror game background, painterly, cinematic low light, visual novel environment art, no readable text"
+    ],
+    "palette": [
+      "dirty teal, tungsten yellow, bruised violet, deep charcoal"
+    ],
+    "output": "D:\\game\\assets\\generated\\safe_room_clueboard.png"
+  },
+  "api": "http://127.0.0.1:8188",
+  "model": {
+    "id": "wai-illustrious-sdxl-v170",
+    "enabled": true,
+    "checkpoint": "人物\\waiIllustriousSDXL_v170.safetensors",
+    "base": "sdxl",
+    "priority": 80,
+    "best_for": [
+      "illustration",
+      "character",
+      "anime",
+      "game-art",
+      "thumbnail",
+      "portrait",
+      "bang-dream",
+      "illustrious"
+    ],
+    "avoid_for": [
+      "realistic-product-photo",
+      "photography",
+      "texture",
+      "flat-icon"
+    ],
+    "default_size": [
+      1024,
+      1024
+    ],
+    "default_steps": 30,
+    "default_cfg": 6.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "quality_prompt": "masterpiece, best quality, newest, highres, polished anime illustration, clean linework",
+    "default_negative": "low quality, worst quality, normal quality, blurry, jpeg artifacts, watermark, signature, unwanted text, logo, bad anatomy, extra fingers, malformed hands"
+  },
+  "loras": [
+    {
+      "id": "usnr-style-illustrious",
+      "enabled": true,
+      "lora_name": "风格\\USNR_STYLE_ILL_V1_lokr3-000024.safetensors",
+      "base": "sdxl",
+      "priority": 0,
+      "best_for": [
+        "usnr",
+        "usnr-style",
+        "painterly"
+      ],
+      "avoid_for": [
+        "photography",
+        "product",
+        "texture",
+        "icon",
+        "clean-corporate"
+      ],
+      "trigger": "usnr",
+      "weight": 0.65,
+      "clip_weight": 0.65,
+      "notes": "Metadata reports Illustrious SDXL training; large style LoRA, kept at moderate strength."
+    }
+  ],
+  "workflow": {
+    "id": "webui-like-sdxl-txt2img",
+    "file": "assets/workflows/webui-like-sdxl-txt2img.json",
+    "base": "sdxl",
+    "priority": 25,
+    "best_for": [
+      "webui",
+      "txt2img",
+      "hires",
+      "high-resolution",
+      "hero",
+      "character",
+      "illustration",
+      "background",
+      "thumbnail"
+    ],
+    "supports_lora": true,
+    "supports_hires_fix": true,
+    "supports_final_resize": true,
+    "notes": "Native-node WebUI-like chain: txt2img, LoRA insertion, latent Hires.fix, second denoise pass, VAE decode, final pixel resize, save."
+  },
+  "positive_prompt": "cramped Japanese apartment safe room interior at night, evidence board with photos and strings but no readable text, CRT television static, locked front door, survival investigation workspace, polished anime horror game background, painterly, cinematic low light, visual novel environment art, no readable text, palette of dirty teal, tungsten yellow, bruised violet, deep charcoal, paranoid investigation, exhausted safety, unstable evidence, spacious background, balanced negative space, subtle details, masterpiece, best quality, newest, highres, polished anime illustration, clean linework, usnr",
+  "negative_prompt": "low quality, blurry, watermark, signature, readable text, logo, busy foreground, distracting focal object, worst quality, normal quality, jpeg artifacts, unwanted text, bad anatomy, extra fingers, malformed hands",
+  "width": 1024,
+  "height": 1024,
+  "steps": 30,
+  "cfg": 6.5,
+  "sampler": "dpmpp_2m",
+  "scheduler": "karras",
+  "denoise": 1.0,
+  "hires_scale": 1.5,
+  "hires_steps": 12,
+  "hires_denoise": 0.35,
+  "hires_upscale_method": "nearest-exact",
+  "final_scale": 1.0,
+  "final_upscale_method": "lanczos",
+  "input_image": null,
+  "mask_image": null,
+  "comfyui_input_image": null,
+  "comfyui_mask_image": null,
+  "mask_grow": 6,
+  "mask_channel": "red",
+  "seed": 3687592865509797246,
+  "batch_size": 1,
+  "filename_prefix": "codex_safe-room-clueboard",
+  "output": "D:\\game\\assets\\generated\\safe_room_clueboard.png",
+  "workflow_file": "C:\\Users\\pzy\\.codex\\skills\\stable-diffusion-assets\\assets\\workflows\\webui-like-sdxl-txt2img.json",
+  "workflow_node_count": 11,
+  "prompt_id": "bcf523a9-28f7-4e31-888c-2bf9697cba73",
+  "comfyui_image": {
+    "filename": "codex_safe-room-clueboard_00001_.png",
+    "subfolder": "",
+    "type": "output"
+  }
+}

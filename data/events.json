@@ -1,0 +1,26 @@
+{
+  "door_events": [
+    {"id":"visitor_calm","name":"平静来访","hint":"她太正常了，像把恐惧提前擦掉。","chased":false},
+    {"id":"visitor_panic","name":"恐慌敲门","hint":"敲门声很急，哭声里有重复的节拍。","chased":false},
+    {"id":"visitor_chased","name":"被追赶","hint":"她身后有脚步声，但节奏不像人。","chased":true},
+    {"id":"visitor_injured","name":"受伤来访","hint":"她说受了伤，血迹方向却需要确认。","chased":false},
+    {"id":"visitor_supplies","name":"带物资","hint":"包里有食物和药，包装来源可疑。","chased":false},
+    {"id":"visitor_knows_inside","name":"知道屋内情况","hint":"她说出了不该知道的房间细节。","chased":false},
+    {"id":"visitor_wrong_code","name":"暗号错误","hint":"她给出的暗号错了半句。","chased":false},
+    {"id":"visitor_duplicate","name":"重复身份","hint":"屋内记录里已经有同名者。","chased":false},
+    {"id":"visitor_silent","name":"沉默来访","hint":"她几乎不说话，只把手贴在门上。","chased":false},
+    {"id":"visitor_fake_radio","name":"携带情报","hint":"她带来一段广播，内容和电视雪花重叠。","chased":false}
+  ],
+  "sleep_events": [
+    {"id":"sleep_living_noise","name":"客厅脚步声","text":"你被客厅里来回走动的脚步吵醒。"},
+    {"id":"sleep_kitchen_water","name":"厨房水声","text":"水龙头像被人拧开，断续滴落。"},
+    {"id":"sleep_clueboard","name":"线索板纸声","text":"墙上的纸张响了一下，像有人在换位置。"},
+    {"id":"sleep_tv_on","name":"电视自动打开","text":"CRT 亮起，雪花里闪过一行无法读清的规则。"},
+    {"id":"sleep_door_unlock","name":"玄关锁响","text":"门锁发出金属松动声，有人在另一侧试探。"},
+    {"id":"sleep_crying","name":"有人在哭","text":"哭声从隔离区传来，声音像熟人，也像录音。"},
+    {"id":"sleep_bedside","name":"床边人影","text":"你睁眼时，看见床边站着一个几乎不呼吸的人影。"},
+    {"id":"sleep_mirror_delay","name":"镜中延迟","text":"洗手间镜子里的你慢了半拍。"},
+    {"id":"sleep_window_tap","name":"窗户轻敲","text":"阳台窗被轻轻敲了三下，像今晚的暗号。"}
+  ]
+}
+
