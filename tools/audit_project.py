@@ -198,6 +198,16 @@ def audit_assets() -> list[str]:
         "assets/generated/fx_evidence_noise_overlay.png",
         "assets/generated/fx_mimic_learning_overlay.png",
     ]
+    ui_icons = [
+        "assets/generated/ui_icon_stamina.png",
+        "assets/generated/ui_icon_contamination.png",
+        "assets/generated/ui_icon_door.png",
+        "assets/generated/ui_icon_quarantine.png",
+        "assets/generated/ui_icon_supplies.png",
+        "assets/generated/ui_icon_trust.png",
+        "assets/generated/ui_icon_danger.png",
+        "assets/generated/ui_icon_evidence.png",
+    ]
     cgs = cg_assets
     character_roles = ["human", "fake", "mimic", "rikki"]
     character_variants = ["base", "calm", "stress", "doubt"]
@@ -219,16 +229,17 @@ def audit_assets() -> list[str]:
     allowed_stems.update(Path(path).stem for path in characters)
     allowed_stems.update(Path(path).stem for path in environment_backgrounds)
     allowed_stems.update(Path(path).stem for path in effect_overlays)
+    allowed_stems.update(Path(path).stem for path in ui_icons)
     allowed_stems.update(Path(path).stem for path in cgs)
     assert_no_preprocessor_leaks()
     assert_no_generated_orphans(allowed_stems)
-    for path in backgrounds + environment_backgrounds + effect_overlays + cgs + characters + source_assets:
+    for path in backgrounds + environment_backgrounds + effect_overlays + ui_icons + cgs + characters + source_assets:
         require((ROOT / path).exists(), f"Missing asset {path}")
     for path in backgrounds + environment_backgrounds + effect_overlays + cgs:
         assert_16x9(path)
     for path in backgrounds:
         assert_sidecar_contains(path.replace(".png", ".asset-plan.json"), "txt2img")
-    for path in backgrounds + environment_backgrounds + effect_overlays + cgs + characters + source_assets:
+    for path in backgrounds + environment_backgrounds + effect_overlays + ui_icons + cgs + characters + source_assets:
         assert_no_loras(path)
         assert_lora_weights_sane(path)
         assert_vae_sane(path)
@@ -243,7 +254,11 @@ def audit_assets() -> list[str]:
     require(environment_script.exists(), "Missing tools/make_environment_variants.py")
     effect_script = ROOT / "tools/make_effect_overlays.py"
     require(effect_script.exists(), "Missing tools/make_effect_overlays.py")
-    return ["backgrounds=2@16:9", f"environment_bg={len(environment_backgrounds)}@16:9", f"effects={len(effect_overlays)}@16:9", f"characters={len(characters)}@no-lora", f"cg={len(cgs)}@no-lora-16:9", "door_event_cg=13", "inspection_cg=7", "preprocessor_leaks=none", "vae=checkpoint_default"]
+    icon_script = ROOT / "tools/make_ui_icons.py"
+    require(icon_script.exists(), "Missing tools/make_ui_icons.py")
+    for path in ui_icons:
+        require(image_size(path) == (128, 128), f"{path} must be 128x128")
+    return ["backgrounds=2@16:9", f"environment_bg={len(environment_backgrounds)}@16:9", f"effects={len(effect_overlays)}@16:9", f"ui_icons={len(ui_icons)}", f"characters={len(characters)}@no-lora", f"cg={len(cgs)}@no-lora-16:9", "door_event_cg=13", "inspection_cg=7", "preprocessor_leaks=none", "vae=checkpoint_default"]
 
 
 def audit_godot() -> list[str]:
@@ -302,7 +317,7 @@ def audit_godot() -> list[str]:
         "_request_backend_dialogue",
     ]:
         require(token in main, f"Main.gd missing {token}")
-    for token in ["bg_title_night_16x9.png", "bg_prep_clueboard_16x9.png", "bg_quarantine_glass_16x9.png", "bg_dawn_settlement_16x9.png", "fx_contamination_overlay.png", "fx_door_damage_overlay.png", "fx_outside_danger_overlay.png", "fx_trust_break_overlay.png", "fx_evidence_noise_overlay.png", "fx_mimic_learning_overlay.png", "char_human_stress.png", "char_fake_doubt.png", "char_mimic_doubt.png", "char_rikki_stress.png", "cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_calm_16x9.png", "cg_door_panic_16x9.png", "cg_door_injured_16x9.png", "cg_door_knows_inside_16x9.png", "cg_door_wrong_code_16x9.png", "cg_door_silent_16x9.png", "cg_door_fake_radio_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_inspect_teeth_16x9.png", "cg_inspect_room_search_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
+    for token in ["bg_title_night_16x9.png", "bg_prep_clueboard_16x9.png", "bg_quarantine_glass_16x9.png", "bg_dawn_settlement_16x9.png", "fx_contamination_overlay.png", "fx_door_damage_overlay.png", "fx_outside_danger_overlay.png", "fx_trust_break_overlay.png", "fx_evidence_noise_overlay.png", "fx_mimic_learning_overlay.png", "ui_icon_stamina.png", "ui_icon_contamination.png", "ui_icon_door.png", "ui_icon_quarantine.png", "ui_icon_supplies.png", "ui_icon_trust.png", "ui_icon_danger.png", "ui_icon_evidence.png", "char_human_stress.png", "char_fake_doubt.png", "char_mimic_doubt.png", "char_rikki_stress.png", "cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_calm_16x9.png", "cg_door_panic_16x9.png", "cg_door_injured_16x9.png", "cg_door_knows_inside_16x9.png", "cg_door_wrong_code_16x9.png", "cg_door_silent_16x9.png", "cg_door_fake_radio_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_door_asks_someone_16x9.png", "cg_door_childlike_16x9.png", "cg_door_mistaken_chased_16x9.png", "cg_inspect_teeth_16x9.png", "cg_inspect_room_search_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
         require(token in main, f"Main.gd missing CG mapping {token}")
     for stale in ["char_human_visitor_hui.png", "char_mimic_visitor_hui.png", "char_another_rikki_hui.png"]:
         require(stale not in main, f"Main.gd still references old character asset {stale}")

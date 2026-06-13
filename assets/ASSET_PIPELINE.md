@@ -51,6 +51,8 @@ Final in-game backgrounds:
 
 `tools/make_effect_overlays.py` derives 6 transparent 16:9 status overlays for contamination, door damage, outside danger, trust collapse, evidence noise, and mimic learning. They are procedural PNGs with no LoRA, no ControlNet/preprocessor inputs, and checkpoint-default VAE metadata for the audit.
 
+`tools/make_ui_icons.py` derives 8 transparent 128x128 status icons for stamina, contamination, door, quarantine, supplies, trust, danger, and evidence. The game shows them above the status text and fades them in as each resource becomes risky.
+
 The final CG is adapted from `another_rikki_final.png`, whose sidecar has no LoRA entries. Older Hui character/background test images and LoRA-bearing background drafts were removed from `assets/generated` so they cannot be mistaken for shipping assets.
 
 ## CG Route

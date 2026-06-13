@@ -1,0 +1,24 @@
+{
+  "mode": "procedural-ui-icon",
+  "output": "assets\\generated\\ui_icon_evidence.png",
+  "size": [
+    128,
+    128
+  ],
+  "role": "ui_icon",
+  "variant": "ui_icon_evidence",
+  "loras": [],
+  "vae": "checkpoint_default",
+  "input_image": null,
+  "mask_image": null,
+  "comfyui_input_image": null,
+  "comfyui_mask_image": null,
+  "workflow_safety": {
+    "active_loras": [],
+    "controlnet_preprocessor_nodes": [],
+    "suspicious_preprocessor_nodes": [],
+    "lora_policy": "no UI icon LoRA; procedural transparent PNG",
+    "hires_fix": "not applicable; procedural UI icon",
+    "vae_policy": "checkpoint_default"
+  }
+}

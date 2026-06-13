@@ -1,4 +1,4 @@
-extends Control
+﻿extends Control
 
 const CHARACTERS_PATH := "res://data/characters.json"
 const DAY_RULES_PATH := "res://data/day_rules.json"
@@ -112,6 +112,17 @@ const EFFECT_OVERLAY := {
 	"mimic_learning": "res://assets/generated/fx_mimic_learning_overlay.png",
 }
 
+const UI_ICON := {
+	"stamina": "res://assets/generated/ui_icon_stamina.png",
+	"contamination": "res://assets/generated/ui_icon_contamination.png",
+	"door": "res://assets/generated/ui_icon_door.png",
+	"quarantine": "res://assets/generated/ui_icon_quarantine.png",
+	"supplies": "res://assets/generated/ui_icon_supplies.png",
+	"trust": "res://assets/generated/ui_icon_trust.png",
+	"danger": "res://assets/generated/ui_icon_danger.png",
+	"evidence": "res://assets/generated/ui_icon_evidence.png",
+}
+
 var rng := RandomNumberGenerator.new()
 
 var characters: Array = []
@@ -137,6 +148,7 @@ var veil: ColorRect
 var title_label: Label
 var subtitle_label: Label
 var stats_label: RichTextLabel
+var status_icon_row: GridContainer
 var narrative: RichTextLabel
 var character_portrait: TextureRect
 var actions_box: VBoxContainer
@@ -241,12 +253,21 @@ func _build_ui() -> void:
 	content.add_theme_constant_override("separation", 16)
 	main.add_child(content)
 
+	var stats_stack := VBoxContainer.new()
+	stats_stack.add_theme_constant_override("separation", 8)
+	status_icon_row = GridContainer.new()
+	status_icon_row.columns = 4
+	status_icon_row.add_theme_constant_override("h_separation", 8)
+	status_icon_row.add_theme_constant_override("v_separation", 8)
+	stats_stack.add_child(status_icon_row)
+	_build_status_icons()
 	stats_label = RichTextLabel.new()
 	stats_label.bbcode_enabled = true
 	stats_label.fit_content = false
 	stats_label.scroll_active = false
 	stats_label.add_theme_font_size_override("normal_font_size", 15)
-	var stats_panel := _titled_panel("状态", stats_label, Vector2(255, 0), Color(0.025, 0.04, 0.045, 0.82))
+	stats_stack.add_child(stats_label)
+	var stats_panel := _titled_panel("状态", stats_stack, Vector2(255, 0), Color(0.025, 0.04, 0.045, 0.82))
 	content.add_child(stats_panel)
 
 	var center_panel := PanelContainer.new()
@@ -387,6 +408,40 @@ func _load_texture(path: String) -> Texture2D:
 	else:
 		tex = ResourceLoader.load(path) as Texture2D
 	return tex
+
+
+func _build_status_icons() -> void:
+	if status_icon_row == null:
+		return
+	for key in ["stamina", "contamination", "door", "quarantine", "supplies", "trust", "danger", "evidence"]:
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(34, 34)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.set_meta("status_key", key)
+		icon.texture = _load_texture(str(UI_ICON.get(key, "")))
+		icon.modulate = Color(1, 1, 1, 0.34)
+		status_icon_row.add_child(icon)
+
+
+func _refresh_status_icons() -> void:
+	if status_icon_row == null or state.is_empty():
+		return
+	var values := {
+		"stamina": clampf(float(state.get("stamina", 0)) / maxf(1.0, float(state.get("stamina_max", 100))), 0.0, 1.0),
+		"contamination": clampf(float(state.get("contamination", 0)) / 100.0, 0.0, 1.0),
+		"door": 1.0 - clampf(float(state.get("door", 100)) / 100.0, 0.0, 1.0),
+		"quarantine": 1.0 - clampf(float(state.get("quarantine", 100)) / 100.0, 0.0, 1.0),
+		"supplies": 1.0 - clampf(float(state.get("supplies", 100)) / 100.0, 0.0, 1.0),
+		"trust": 1.0 - clampf(float(state.get("trust", 100)) / 100.0, 0.0, 1.0),
+		"danger": clampf(float(state.get("outside_danger", 0)) / 100.0, 0.0, 1.0),
+		"evidence": 1.0 - clampf(float(state.get("evidence_integrity", 100)) / 100.0, 0.0, 1.0),
+	}
+	for child in status_icon_row.get_children():
+		var key := str(child.get_meta("status_key", ""))
+		var pressure := float(values.get(key, 0.0))
+		child.modulate = Color(1, 1, 1, clampf(0.34 + pressure * 0.66, 0.34, 1.0))
 
 
 func _set_character_portrait(path: String) -> void:
@@ -2030,6 +2085,7 @@ func _update_panels() -> void:
 	if state.is_empty():
 		return
 	_set_effect_overlay(_effect_overlay_for_state())
+	_refresh_status_icons()
 	var status := ""
 	status += "[color=#9ef0dc]Day[/color] " + str(state["day"]) + " / 9\n"
 	status += _bar("体力", state["stamina"], state["stamina_max"], "#9ef0dc")
