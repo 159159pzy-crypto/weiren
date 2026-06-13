@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "size": [
+    1920,
+    1080
+  ],
+  "entries": [
+    {
+      "id": "cg_another_rikki_hui_16x9",
+      "role": "ending",
+      "trigger": "hidden",
+      "asset": "assets/generated/cg_another_rikki_hui_16x9.png",
+      "source": "assets/generated/another_rikki_final.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_sleep_living_noise_16x9",
+      "role": "sleep",
+      "trigger": "sleep_living_noise",
+      "asset": "assets/generated/cg_sleep_living_noise_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_sleep_kitchen_water_16x9",
+      "role": "sleep",
+      "trigger": "sleep_kitchen_water",
+      "asset": "assets/generated/cg_sleep_kitchen_water_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_sleep_clueboard_16x9",
+      "role": "sleep",
+      "trigger": "sleep_clueboard",
+      "asset": "assets/generated/cg_sleep_clueboard_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_sleep_tv_on_16x9",
+      "role": "sleep",
+      "trigger": "sleep_tv_on",
+      "asset": "assets/generated/cg_sleep_tv_on_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_sleep_door_unlock_16x9",
+      "role": "sleep",
+      "trigger": "sleep_door_unlock",
+      "asset": "assets/generated/cg_sleep_door_unlock_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_sleep_crying_16x9",
+      "role": "sleep",
+      "trigger": "sleep_crying",
+      "asset": "assets/generated/cg_sleep_crying_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_sleep_bedside_16x9",
+      "role": "sleep",
+      "trigger": "sleep_bedside",
+      "asset": "assets/generated/cg_sleep_bedside_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_sleep_mirror_delay_16x9",
+      "role": "sleep",
+      "trigger": "sleep_mirror_delay",
+      "asset": "assets/generated/cg_sleep_mirror_delay_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_sleep_window_tap_16x9",
+      "role": "sleep",
+      "trigger": "sleep_window_tap",
+      "asset": "assets/generated/cg_sleep_window_tap_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_chased_16x9",
+      "role": "door_event",
+      "trigger": "visitor_chased",
+      "asset": "assets/generated/cg_door_chased_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_duplicate_16x9",
+      "role": "door_event",
+      "trigger": "visitor_duplicate",
+      "asset": "assets/generated/cg_door_duplicate_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_door_supplies_16x9",
+      "role": "door_event",
+      "trigger": "visitor_supplies",
+      "asset": "assets/generated/cg_door_supplies_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_ending_true_16x9",
+      "role": "ending",
+      "trigger": "true",
+      "asset": "assets/generated/cg_ending_true_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_ending_good_16x9",
+      "role": "ending",
+      "trigger": "good",
+      "asset": "assets/generated/cg_ending_good_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_ending_neutral_16x9",
+      "role": "ending",
+      "trigger": "neutral",
+      "asset": "assets/generated/cg_ending_neutral_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_ending_no_one_16x9",
+      "role": "ending",
+      "trigger": "no_one",
+      "asset": "assets/generated/cg_ending_no_one_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_ending_perfect_band_16x9",
+      "role": "ending",
+      "trigger": "perfect_band",
+      "asset": "assets/generated/cg_ending_perfect_band_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_ending_purple_16x9",
+      "role": "ending",
+      "trigger": "purple",
+      "asset": "assets/generated/cg_ending_purple_16x9.png",
+      "source": "assets/generated/cg_another_rikki_hui_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_ending_identity_16x9",
+      "role": "ending",
+      "trigger": "identity",
+      "asset": "assets/generated/cg_ending_identity_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_ending_door_16x9",
+      "role": "ending",
+      "trigger": "door",
+      "asset": "assets/generated/cg_ending_door_16x9.png",
+      "source": "assets/generated/bg_peephole_hallway_16x9.png",
+      "derived": true,
+      "loras": []
+    },
+    {
+      "id": "cg_ending_distortion_16x9",
+      "role": "ending",
+      "trigger": "distortion",
+      "asset": "assets/generated/cg_ending_distortion_16x9.png",
+      "source": "assets/generated/bg_safe_room_clueboard_16x9.png",
+      "derived": true,
+      "loras": []
+    }
+  ]
+}

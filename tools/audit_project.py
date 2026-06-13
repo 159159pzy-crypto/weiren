@@ -131,11 +131,22 @@ def audit_data() -> list[str]:
 
 
 def audit_assets() -> list[str]:
+    cg_manifest = read_json("data/cg_manifest.json")
+    cg_entries = cg_manifest.get("entries", [])
+    require(len(cg_entries) >= 22, "Expected at least 22 CG manifest entries")
+    cg_assets = [entry["asset"] for entry in cg_entries]
+    roles = {entry.get("role", "") for entry in cg_entries}
+    triggers = {entry.get("trigger", "") for entry in cg_entries}
+    require("sleep" in roles and "ending" in roles and "door_event" in roles, "CG manifest must cover sleep, endings, and door events")
+    for trigger in ["sleep_living_noise", "sleep_kitchen_water", "sleep_clueboard", "sleep_tv_on", "sleep_door_unlock", "sleep_crying", "sleep_bedside", "sleep_mirror_delay", "sleep_window_tap"]:
+        require(trigger in triggers, f"CG manifest missing sleep trigger {trigger}")
+    for trigger in ["true", "good", "neutral", "no_one", "perfect_band", "purple", "identity", "door", "hidden", "distortion"]:
+        require(trigger in triggers, f"CG manifest missing ending trigger {trigger}")
     backgrounds = [
         "assets/generated/bg_peephole_hallway_16x9.png",
         "assets/generated/bg_safe_room_clueboard_16x9.png",
     ]
-    cgs = ["assets/generated/cg_another_rikki_hui_16x9.png"]
+    cgs = cg_assets
     characters = [
         "assets/generated/char_human_base.png",
         "assets/generated/char_fake_base.png",
@@ -147,12 +158,12 @@ def audit_assets() -> list[str]:
         "another_rikki_final",
         "bg_peephole_hallway_16x9",
         "bg_safe_room_clueboard_16x9",
-        "cg_another_rikki_hui_16x9",
         "char_human_base",
         "char_fake_base",
         "char_mimic_base",
         "char_rikki_base",
     }
+    allowed_stems.update(Path(path).stem for path in cgs)
     assert_no_preprocessor_leaks()
     assert_no_generated_orphans(allowed_stems)
     for path in backgrounds + cgs + characters + source_assets:
@@ -169,7 +180,7 @@ def audit_assets() -> list[str]:
     for path in characters + backgrounds + source_assets:
         assert_hires_sane(path)
     assert_sidecar_contains("assets/generated/cg_another_rikki_hui_16x9.asset-plan.json", "hui-derived-16x9-adapter")
-    return ["backgrounds=2@16:9", "characters=4@no-lora", "cg=1@no-lora-16:9", "preprocessor_leaks=none", "vae=checkpoint_default"]
+    return ["backgrounds=2@16:9", "characters=4@no-lora", f"cg={len(cgs)}@no-lora-16:9", "preprocessor_leaks=none", "vae=checkpoint_default"]
 
 
 def audit_godot() -> list[str]:
@@ -185,6 +196,9 @@ def audit_godot() -> list[str]:
         "CHAR_FAKE",
         "CHAR_MIMIC",
         "CHAR_RIKKI",
+        "SLEEP_CG",
+        "DOOR_EVENT_CG",
+        "ENDING_CG",
         "BACKEND_DIALOGUE_URL",
         "_prep_assign_rooms",
         "_prep_set_code",
@@ -213,6 +227,8 @@ def audit_godot() -> list[str]:
         "_request_backend_dialogue",
     ]:
         require(token in main, f"Main.gd missing {token}")
+    for token in ["cg_sleep_living_noise_16x9.png", "cg_sleep_mirror_delay_16x9.png", "cg_door_chased_16x9.png", "cg_door_duplicate_16x9.png", "cg_ending_true_16x9.png", "cg_ending_distortion_16x9.png"]:
+        require(token in main, f"Main.gd missing CG mapping {token}")
     for stale in ["char_human_visitor_hui.png", "char_mimic_visitor_hui.png", "char_another_rikki_hui.png"]:
         require(stale not in main, f"Main.gd still references old character asset {stale}")
     for label in ["分配房间", "设定今日暗号", "选择重点检测设备", "分配物资"]:

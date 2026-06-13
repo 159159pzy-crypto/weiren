@@ -13,6 +13,37 @@ const CHAR_MIMIC := "res://assets/generated/char_mimic_base.png"
 const CHAR_RIKKI := "res://assets/generated/char_rikki_base.png"
 const BACKEND_DIALOGUE_URL := "http://127.0.0.1:8787/v1/dialogue"
 
+const SLEEP_CG := {
+	"sleep_living_noise": "res://assets/generated/cg_sleep_living_noise_16x9.png",
+	"sleep_kitchen_water": "res://assets/generated/cg_sleep_kitchen_water_16x9.png",
+	"sleep_clueboard": "res://assets/generated/cg_sleep_clueboard_16x9.png",
+	"sleep_tv_on": "res://assets/generated/cg_sleep_tv_on_16x9.png",
+	"sleep_door_unlock": "res://assets/generated/cg_sleep_door_unlock_16x9.png",
+	"sleep_crying": "res://assets/generated/cg_sleep_crying_16x9.png",
+	"sleep_bedside": "res://assets/generated/cg_sleep_bedside_16x9.png",
+	"sleep_mirror_delay": "res://assets/generated/cg_sleep_mirror_delay_16x9.png",
+	"sleep_window_tap": "res://assets/generated/cg_sleep_window_tap_16x9.png",
+}
+
+const DOOR_EVENT_CG := {
+	"visitor_chased": "res://assets/generated/cg_door_chased_16x9.png",
+	"visitor_duplicate": "res://assets/generated/cg_door_duplicate_16x9.png",
+	"visitor_supplies": "res://assets/generated/cg_door_supplies_16x9.png",
+}
+
+const ENDING_CG := {
+	"true": "res://assets/generated/cg_ending_true_16x9.png",
+	"good": "res://assets/generated/cg_ending_good_16x9.png",
+	"neutral": "res://assets/generated/cg_ending_neutral_16x9.png",
+	"no_one": "res://assets/generated/cg_ending_no_one_16x9.png",
+	"perfect_band": "res://assets/generated/cg_ending_perfect_band_16x9.png",
+	"purple": "res://assets/generated/cg_ending_purple_16x9.png",
+	"identity": "res://assets/generated/cg_ending_identity_16x9.png",
+	"door": "res://assets/generated/cg_ending_door_16x9.png",
+	"hidden": BG_FINAL,
+	"distortion": "res://assets/generated/cg_ending_distortion_16x9.png",
+}
+
 var rng := RandomNumberGenerator.new()
 
 var characters: Array = []
@@ -686,6 +717,7 @@ func _show_current_visitor() -> void:
 	var visitor: Dictionary = current_visitors[current_visitor_index]
 	var character: Dictionary = visitor["character"]
 	var event: Dictionary = visitor["event"]
+	_set_background(str(DOOR_EVENT_CG.get(str(event.get("id", "")), BG_PEEPHOLE)))
 	_set_character_portrait(_portrait_for_visitor(visitor))
 	title_label.text = "第 " + str(state["day"]) + " 夜 / 门外来访 " + str(current_visitor_index + 1) + "-" + str(current_visitors.size())
 	subtitle_label.text = character.get("name", "") + " / " + event.get("name", "")
@@ -1473,6 +1505,7 @@ func _show_sleep_event(events: Array, index: int) -> void:
 		return
 	_hide_character_portrait()
 	var ev: Dictionary = events[index]
+	_set_background(str(SLEEP_CG.get(str(ev.get("id", "")), BG_ROOM)))
 	title_label.text = "第 " + str(state["day"]) + " 夜 / 睡眠事件"
 	subtitle_label.text = ev.get("name", "")
 	event_label.text = "[color=#ff8f8f]" + ev.get("name", "") + "[/color]\n醒来会损失体力，不醒来会丢线索。"
@@ -1667,10 +1700,7 @@ func _check_immediate_failure() -> void:
 func _show_ending(kind: String) -> void:
 	current_phase = "ending"
 	_hide_character_portrait()
-	if kind == "hidden":
-		_set_background(BG_FINAL)
-	else:
-		_set_background(BG_ROOM)
+	_set_background(str(ENDING_CG.get(kind, ENDING_CG.get("distortion", BG_ROOM))))
 	var title := ""
 	var body := ""
 	match kind:

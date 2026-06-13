@@ -44,6 +44,7 @@ python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8787
 - `assets/generated/char_mimic_base.png`
 - `assets/generated/char_rikki_base.png`
 - `assets/generated/cg_another_rikki_hui_16x9.png`
+- `data/cg_manifest.json` lists the current 22 audited 16:9 CG entries used by sleep events, door events, and endings.
 
 ## 验证
 
