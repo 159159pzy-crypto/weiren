@@ -49,6 +49,8 @@ Final in-game backgrounds:
 
 `tools/make_environment_variants.py` derives 8 additional audited 16:9 environment backgrounds from the two base backgrounds for title, prep, investigation, quarantine, sleep, dawn, contamination, and final-judgment phases. These sidecars keep empty `loras`, no input/mask references, and checkpoint-default VAE policy.
 
+`tools/make_effect_overlays.py` derives 6 transparent 16:9 status overlays for contamination, door damage, outside danger, trust collapse, evidence noise, and mimic learning. They are procedural PNGs with no LoRA, no ControlNet/preprocessor inputs, and checkpoint-default VAE metadata for the audit.
+
 The final CG is adapted from `another_rikki_final.png`, whose sidecar has no LoRA entries. Older Hui character/background test images and LoRA-bearing background drafts were removed from `assets/generated` so they cannot be mistaken for shipping assets.
 
 ## CG Route

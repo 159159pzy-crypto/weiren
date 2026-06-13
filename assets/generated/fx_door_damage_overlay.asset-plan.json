@@ -1,0 +1,24 @@
+{
+  "mode": "generated-effect-overlay",
+  "output": "assets\\generated\\fx_door_damage_overlay.png",
+  "size": [
+    1920,
+    1080
+  ],
+  "role": "effect_overlay",
+  "variant": "fx_door_damage_overlay",
+  "loras": [],
+  "vae": "checkpoint_default",
+  "input_image": null,
+  "mask_image": null,
+  "comfyui_input_image": null,
+  "comfyui_mask_image": null,
+  "workflow_safety": {
+    "active_loras": [],
+    "controlnet_preprocessor_nodes": [],
+    "suspicious_preprocessor_nodes": [],
+    "lora_policy": "no effect overlay LoRA; procedural transparent PNG",
+    "hires_fix": "not applicable; procedural 16:9 transparent overlay",
+    "vae_policy": "checkpoint_default"
+  }
+}

@@ -103,6 +103,15 @@ const ENDING_CG := {
 	"distortion": "res://assets/generated/cg_ending_distortion_16x9.png",
 }
 
+const EFFECT_OVERLAY := {
+	"contamination": "res://assets/generated/fx_contamination_overlay.png",
+	"door_damage": "res://assets/generated/fx_door_damage_overlay.png",
+	"outside_danger": "res://assets/generated/fx_outside_danger_overlay.png",
+	"trust_break": "res://assets/generated/fx_trust_break_overlay.png",
+	"evidence_noise": "res://assets/generated/fx_evidence_noise_overlay.png",
+	"mimic_learning": "res://assets/generated/fx_mimic_learning_overlay.png",
+}
+
 var rng := RandomNumberGenerator.new()
 
 var characters: Array = []
@@ -123,6 +132,7 @@ var backend_enabled := true
 var pending_backend_context := {}
 
 var background: TextureRect
+var effect_overlay: TextureRect
 var veil: ColorRect
 var title_label: Label
 var subtitle_label: Label
@@ -173,6 +183,13 @@ func _read_json_dict(path: String) -> Dictionary:
 
 func _build_ui() -> void:
 	_set_background(BG_PEEPHOLE)
+	effect_overlay = TextureRect.new()
+	effect_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	effect_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	effect_overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	effect_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	effect_overlay.visible = false
+	add_child(effect_overlay)
 	veil = ColorRect.new()
 	veil.color = Color(0.02, 0.025, 0.028, 0.48)
 	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -329,6 +346,37 @@ func _set_background(path: String) -> void:
 	var tex := _load_texture(path)
 	if tex != null:
 		background.texture = tex
+
+
+func _set_effect_overlay(path: String) -> void:
+	if effect_overlay == null:
+		return
+	if path.is_empty():
+		effect_overlay.visible = false
+		effect_overlay.texture = null
+		return
+	var tex := _load_texture(path)
+	if tex != null:
+		effect_overlay.texture = tex
+		effect_overlay.visible = true
+
+
+func _effect_overlay_for_state() -> String:
+	if state.is_empty() or current_phase == "title":
+		return ""
+	if int(state.get("contamination", 0)) >= 75 or int(state.get("self_suspicion", 0)) >= 80:
+		return str(EFFECT_OVERLAY.get("contamination", ""))
+	if int(state.get("door", 100)) <= 32:
+		return str(EFFECT_OVERLAY.get("door_damage", ""))
+	if int(state.get("outside_danger", 0)) >= 72 or int(state.get("abandonment", 0)) >= 7:
+		return str(EFFECT_OVERLAY.get("outside_danger", ""))
+	if int(state.get("trust", 100)) <= 30:
+		return str(EFFECT_OVERLAY.get("trust_break", ""))
+	if int(state.get("evidence_integrity", 100)) <= 45 or int(state.get("rule_distortion", 0)) >= 60:
+		return str(EFFECT_OVERLAY.get("evidence_noise", ""))
+	if int(state.get("mimic_learning", 0)) >= 70:
+		return str(EFFECT_OVERLAY.get("mimic_learning", ""))
+	return ""
 
 
 func _load_texture(path: String) -> Texture2D:
@@ -1981,6 +2029,7 @@ func _final_stats() -> String:
 func _update_panels() -> void:
 	if state.is_empty():
 		return
+	_set_effect_overlay(_effect_overlay_for_state())
 	var status := ""
 	status += "[color=#9ef0dc]Day[/color] " + str(state["day"]) + " / 9\n"
 	status += _bar("体力", state["stamina"], state["stamina_max"], "#9ef0dc")
