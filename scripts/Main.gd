@@ -1089,12 +1089,100 @@ func _show_investigation() -> void:
 	narrative.text = "[color=#effff7]门锁暂时安静。[/color]\n\n屋内的人不全可信，线索板也未必可信。你可以用最后的体力清理一个风险点。"
 	_update_panels()
 	_clear_actions()
+	_add_action("室内自由对话（体力 2）", _indoor_free_talk)
+	_add_action("共同记忆盘问（体力 4）", _indoor_memory_check)
+	_add_action("屋内牙齿/虹膜检查（体力 5）", _indoor_face_check)
+	_add_action("屋内指泥/足迹检测（体力 5）", _indoor_trace_check)
+	_add_action("屋内呼吸/影子观察（体力 5）", _indoor_breath_shadow_check)
 	_add_action("搜查房间（体力 6）", _investigate_room)
 	_add_action("交叉质问屋内成员（体力 4）", _cross_question)
 	_add_action("让乐奈凭直觉指出危险（体力 3）", _rana_hint)
 	_add_action("请爽世照顾伤员（物资 6）", _soyo_care)
 	_add_action("熬夜守到天亮（体力 35）", _guard_until_dawn)
 	_add_action("睡觉", _start_sleep)
+
+
+func _indoor_free_talk() -> void:
+	if !_spend_stamina(2):
+		return
+	if int(state["humans_inside"]) > 0:
+		state["trust"] = mini(100, int(state["trust"]) + 2)
+		state["evidence_integrity"] = mini(100, int(state["evidence_integrity"]) + 3)
+		_log("你让屋内的人轮流说话。真人的停顿互相接上，线索板多了一点温度。")
+	else:
+		state["mimic_learning"] = mini(100, int(state["mimic_learning"]) + 4)
+		state["contamination"] = mini(100, int(state["contamination"]) + 3)
+		_log("你和屋内的人说话。回答都很顺，顺到像同一张纸。")
+	_show_investigation()
+
+
+func _indoor_memory_check() -> void:
+	if !_spend_stamina(4):
+		return
+	var chance := 50 + int(state["evidence_integrity"]) / 5
+	if _resolve_indoor_threat("memory", chance):
+		_log("共同记忆盘问对不上：有人把原因和结果说反了，被转入隔离记录。")
+	else:
+		state["trust"] = maxi(0, int(state["trust"]) - 2)
+		state["mimic_learning"] = mini(100, int(state["mimic_learning"]) + 3)
+		_log("共同记忆盘问没有结论，屋内的人开始怀疑你只是需要一个替罪者。")
+	_show_investigation()
+
+
+func _indoor_face_check() -> void:
+	if !_spend_stamina(5):
+		return
+	var chance := 46 + (10 if int(state["day"]) >= 2 else 0)
+	if _resolve_indoor_threat("face", chance):
+		_log("屋内牙齿/虹膜检查发现异常：过于完美的牙齿和红偏虹膜暴露了入侵者。")
+	else:
+		state["trust"] = maxi(0, int(state["trust"]) - 3)
+		_log("牙齿和虹膜检查没有抓到异常，只让大家更疲惫。")
+	_show_investigation()
+
+
+func _indoor_trace_check() -> void:
+	if !_spend_stamina(5):
+		return
+	var chance := 48 + (12 if int(state["day"]) >= 4 else 0)
+	if _resolve_indoor_threat("trace", chance):
+		_log("指泥/足迹检测板留下黑泥和灼痕，你把一个伪装者逼回门外。")
+	else:
+		state["evidence_integrity"] = mini(100, int(state["evidence_integrity"]) + 4)
+		_log("你检查手指、门槛和检测板，只确认了屋内动线。")
+	_show_investigation()
+
+
+func _indoor_breath_shadow_check() -> void:
+	if !_spend_stamina(5):
+		return
+	var chance := 54 + (10 if int(state["day"]) >= 3 else 0)
+	if _resolve_indoor_threat("breath_shadow", chance):
+		_log("呼吸冷凝片没有起雾，灯下影子慢半拍：变身怪被迫现形。")
+	else:
+		state["contamination"] = mini(100, int(state["contamination"]) + 2)
+		_log("你让大家站到灯下。影子都在，但你已经记不清哪个慢了一拍。")
+	_show_investigation()
+
+
+func _resolve_indoor_threat(kind: String, base_chance: int) -> bool:
+	var chance := clampi(base_chance + int(state.get("room_search_bonus", 0)) * 8, 5, 95)
+	if kind == "memory" and int(state["mimics_inside"]) > 0 and rng.randi_range(1, 100) <= chance:
+		state["mimics_inside"] = maxi(0, int(state["mimics_inside"]) - 1)
+		state["quarantine"] = maxi(0, int(state["quarantine"]) - 12)
+		state["evidence_integrity"] = mini(100, int(state["evidence_integrity"]) + 7)
+		return true
+	if kind == "breath_shadow" and int(state["mimics_inside"]) > 0 and rng.randi_range(1, 100) <= chance:
+		state["mimics_inside"] = maxi(0, int(state["mimics_inside"]) - 1)
+		state["contamination"] = maxi(0, int(state["contamination"]) - 5)
+		state["quarantine"] = maxi(0, int(state["quarantine"]) - 16)
+		return true
+	if int(state["fakes_inside"]) > 0 and rng.randi_range(1, 100) <= chance:
+		state["fakes_inside"] = maxi(0, int(state["fakes_inside"]) - 1)
+		state["contamination"] = maxi(0, int(state["contamination"]) - 6)
+		state["evidence_integrity"] = mini(100, int(state["evidence_integrity"]) + 5)
+		return true
+	return false
 
 
 func _investigate_room() -> void:
